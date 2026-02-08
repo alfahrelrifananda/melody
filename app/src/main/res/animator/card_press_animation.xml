@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Pressed State Animation -->
+    <item android:state_pressed="true">
+        <set android:ordering="together">
+            <!-- Scale down animation (squish effect) -->
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="120"
+                android:valueTo="0.95"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="120"
+                android:valueTo="0.95"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+
+            <!-- Increase corner radius for more rounded appearance -->
+            <objectAnimator
+                android:propertyName="cardCornerRadius"
+                android:duration="120"
+                android:valueTo="40dp"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </set>
+    </item>
+
+    <!-- Default State Animation (return to normal) -->
+    <item>
+        <set android:ordering="together">
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="180"
+                android:valueTo="1.0"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="180"
+                android:valueTo="1.0"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+
+            <objectAnimator
+                android:propertyName="translationZ"
+                android:duration="180"
+                android:valueTo="0dp"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+
+            <!-- Return corner radius to original -->
+            <objectAnimator
+                android:propertyName="cardCornerRadius"
+                android:duration="180"
+                android:valueTo="32dp"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </set>
+    </item>
+
+</selector>

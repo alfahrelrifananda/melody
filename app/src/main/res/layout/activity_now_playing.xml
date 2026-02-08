@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/blurredBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_outline_music_note_24" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="1"
+        android:background="?attr/colorSurface" />
+
+    <LinearLayout
+        android:id="@+id/nowPlayingContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:fitsSystemWindows="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_margin="32dp">
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageView
+                    android:id="@+id/albumArt"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_outline_music_note_24"
+                    tools:src="@tools:sample/backgrounds/scenic" />
+
+            </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp"
+            android:paddingVertical="0dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/songTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Song Title"
+                android:textAppearance="?attr/textAppearanceHeadlineLarge"
+                android:gravity="center"
+                android:maxLines="1"
+                android:ellipsize="marquee"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:freezesText="true"
+                android:singleLine="true"
+                android:scrollHorizontally="true"
+                tools:text="Sample Song Title" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="32dp"
+            android:paddingVertical="8dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:gravity="center">
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/seekBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:waveAmplitude="3dp"
+                    app:wavelengthDeterminate="24dp"
+                    android:indeterminate="false" />
+
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="4dp">
+
+                <TextView
+                    android:id="@+id/currentTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0:00"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:minWidth="40dp"
+                    android:gravity="center" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/totalDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0:00"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:minWidth="40dp"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButtonGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="32dp"
+            android:paddingVertical="0dp"
+            android:paddingTop="8dp"
+            android:gravity="center_horizontal"
+            android:spacing="4dp">
+
+            <Button
+                android:id="@+id/previousButton"
+
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="0.2"
+                android:contentDescription="Previous"
+                android:gravity="center"
+                app:icon="@drawable/ic_baseline_skip_previous_24"
+                app:iconGravity="textStart" />
+
+            <Button
+                android:id="@+id/playPauseButton"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="0.4"
+                android:contentDescription="Play"
+                android:gravity="center"
+                android:text="PLAY"
+                android:textSize="21sp"
+                app:iconGravity="textStart" />
+
+            <Button
+                android:id="@+id/nextButton"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="0.2"
+                android:contentDescription="Next"
+                android:gravity="center"
+                app:icon="@drawable/ic_baseline_skip_next_24"
+                app:iconGravity="textStart" />
+
+        </com.google.android.material.button.MaterialButtonGroup>
+
+        <com.google.android.material.button.MaterialButtonGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="32dp"
+            android:paddingBottom="48dp"
+            android:gravity="center_horizontal"
+            android:spacing="4dp">
+
+            <Button
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:id="@+id/shuffleButton"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="0.25"
+                android:contentDescription="Shuffle"
+                android:gravity="center"
+                app:icon="@drawable/ic_outline_shuffle_24"
+                app:iconGravity="textStart" />
+
+            <Button
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:id="@+id/repeatButton"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="0.25"
+                android:contentDescription="Shuffle"
+                android:gravity="center"
+                app:iconGravity="textStart"
+                app:icon="@drawable/ic_outline_repeat_24"/>
+
+
+
+
+
+
+            <Button
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:id="@+id/addToCollection"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="0.5"
+                android:contentDescription="Shuffle"
+                android:gravity="center"
+                app:icon="@drawable/ic_outline_queue_music_24"
+                app:iconGravity="textStart" />
+
+            <Button
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:id="@+id/queueButton"
+                android:layout_width="0dp"
+                android:layout_height="54dp"
+                android:layout_weight="0.5"
+                android:contentDescription="Shuffle"
+                android:gravity="center"
+                app:icon="@drawable/ic_round_playlist_play_24"
+                app:iconGravity="textStart" />
+
+
+
+        </com.google.android.material.button.MaterialButtonGroup>
+
+    </LinearLayout>
+
+</FrameLayout>

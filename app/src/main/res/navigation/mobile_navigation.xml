@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_music">
+
+    <fragment
+        android:id="@+id/navigation_music"
+        android:name="felle.melody.ui.music.MusicFragment"
+        android:label="@string/title_music"
+        tools:layout="@layout/fragment_music" />
+
+    <fragment
+        android:id="@+id/navigation_album"
+        android:name="felle.melody.ui.album.AlbumFragment"
+        android:label="@string/title_album"
+        tools:layout="@layout/fragment_album" />
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="felle.melody.ui.settings.SettingsFragment"
+        android:label="@string/title_settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/navigation_artist"
+        android:name="felle.melody.ui.artist.ArtistFragment"
+        android:label="@string/title_artist"
+        tools:layout="@layout/fragment_artist" />
+    <fragment
+        android:id="@+id/navigation_collection"
+        android:name="felle.melody.ui.collection.CollectionFragment"
+        android:label="@string/title_collection"
+        tools:layout="@layout/fragment_collection" />
+</navigation>
