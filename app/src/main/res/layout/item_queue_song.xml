@@ -19,7 +19,7 @@
 
         <TextView
             android:id="@+id/queuePosition"
-            android:layout_width="32dp"
+            android:layout_width="24dp"
             android:layout_height="wrap_content"
             android:text="1"
             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
@@ -39,7 +39,7 @@
             app:layout_constraintStart_toEndOf="@id/queuePosition"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginStart="12dp" />
+            android:layout_marginStart="4dp" />
 
         <LinearLayout
             android:id="@+id/songInfoContainer"
@@ -90,11 +90,9 @@
 
         <ImageView
             android:id="@+id/dragHandle"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_outline_queue_music_24"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:contentDescription="Drag to reorder"
-            app:tint="?attr/colorOnSurfaceVariant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />

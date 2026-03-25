@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
@@ -41,7 +42,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int REFRESH_ANIMATION_DURATION = 1000;
     private static final int REFRESH_COOLDOWN_DURATION = 2000;
     private static final int MINI_PLAYER_ANIMATION_DURATION = 300;
+    private static final int NAV_ANIMATION_DURATION = 250;
     private static final float TOOLBAR_FADE_THRESHOLD = 0.7f;
+    private static final float SWIPE_THRESHOLD = 150f;
+
+    public static final String ACTION_NAV_SCROLL = "NAV_SCROLL_DIRECTION";
 
     private ActivityMainBinding binding;
     private TextView toolbarTitle;
@@ -63,17 +68,20 @@ public class MainActivity extends AppCompatActivity {
     private MusicItem currentPlayingItem;
     private boolean isPlaying = false;
     private boolean isMiniPlayerVisible = false;
+    private boolean isNavVisible = true;
     private boolean isReceiverRegistered = false;
+    private boolean isScrollReceiverRegistered = false;
     private boolean isActivityDestroyed = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // -------------------------------------------------------------------------
+    // Broadcast receiver: music service updates
+    // -------------------------------------------------------------------------
     private final BroadcastReceiver musicUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (isActivityDestroyed || isFinishing() || isDestroyed()) {
-                return;
-            }
+            if (isActivityDestroyed || isFinishing() || isDestroyed()) return;
 
             try {
                 String action = intent.getAction();
@@ -102,6 +110,31 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // -------------------------------------------------------------------------
+    // Broadcast receiver: scroll direction from fragments
+    // -------------------------------------------------------------------------
+    private final BroadcastReceiver scrollDirectionReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (isActivityDestroyed || isFinishing() || isDestroyed()) return;
+
+            try {
+                boolean hide = intent.getBooleanExtra("hide", false);
+                if (hide && isNavVisible) {
+                    hideNavBar();
+                } else if (!hide && !isNavVisible) {
+                    showNavBar();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error handling scroll broadcast: " + e.getMessage(), e);
+            }
+        }
+    };
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,12 +161,84 @@ public class MainActivity extends AppCompatActivity {
             setupToolbarActions();
             setupSearchButton();
             registerMusicUpdateReceiver();
+            registerScrollDirectionReceiver();
 
         } catch (Exception e) {
             Log.e(TAG, "Error in onCreate: " + e.getMessage(), e);
             finish();
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try {
+            sendMusicServiceAction(MusicService.ACTION_REQUEST_STATE);
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onResume: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        try {
+            if (miniPlayerContainer != null) miniPlayerContainer.clearAnimation();
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onPause: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        isActivityDestroyed = true;
+
+        mainHandler.removeCallbacksAndMessages(null);
+
+        if (isReceiverRegistered) {
+            try {
+                unregisterReceiver(musicUpdateReceiver);
+                isReceiverRegistered = false;
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "musicUpdateReceiver was not registered or already unregistered");
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering musicUpdateReceiver: " + e.getMessage(), e);
+            }
+        }
+
+        if (isScrollReceiverRegistered) {
+            try {
+                unregisterReceiver(scrollDirectionReceiver);
+                isScrollReceiverRegistered = false;
+            } catch (IllegalArgumentException e) {
+                Log.w(TAG, "scrollDirectionReceiver was not registered or already unregistered");
+            } catch (Exception e) {
+                Log.e(TAG, "Error unregistering scrollDirectionReceiver: " + e.getMessage(), e);
+            }
+        }
+
+        try {
+            currentPlayingItem = null;
+
+            if (isFinishing() && miniAlbumArt != null) {
+                try {
+                    Glide.with(getApplicationContext()).clear(miniAlbumArt);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error clearing Glide: " + e.getMessage());
+                }
+            }
+
+            binding = null;
+        } catch (Exception e) {
+            Log.e(TAG, "Error clearing references: " + e.getMessage(), e);
+        }
+
+        super.onDestroy();
+    }
+
+    // =========================================================================
+    // Toolbar
+    // =========================================================================
 
     private boolean initializeToolbarComponents() {
         try {
@@ -162,108 +267,41 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setupViewPagerAndNavigation() {
+    private void setupCollapsingToolbarTitleAnimation(AppBarLayout appBarLayout) {
+        if (appBarLayout == null) return;
+
         try {
-            viewPager = findViewById(R.id.view_pager);
-            navView = findViewById(R.id.nav_view);
+            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
+                private boolean isCollapsed = false;
 
-            if (viewPager == null || navView == null) {
-                Log.e(TAG, "ViewPager or BottomNavigationView is null");
-                return;
-            }
-
-            pagerAdapter = new MainViewPagerAdapter(this);
-            viewPager.setAdapter(pagerAdapter);
-
-            viewPager.setOffscreenPageLimit(1);
-
-            // Disable swipe gestures
-            viewPager.setUserInputEnabled(true);
-
-            viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
                 @Override
-                public void onPageSelected(int position) {
-                    super.onPageSelected(position);
-                    if (!isActivityDestroyed) {
-                        updateNavigationSelection(position);
-                        updateTitleForPosition(position);
+                public void onOffsetChanged(AppBarLayout appBar, int verticalOffset) {
+                    if (isActivityDestroyed || toolbarTitle == null || collapsingToolbar == null) return;
+
+                    try {
+                        int totalScrollRange = appBar.getTotalScrollRange();
+                        float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
+                        boolean shouldCollapse = percentage > TOOLBAR_FADE_THRESHOLD;
+
+                        if (shouldCollapse != isCollapsed) {
+                            isCollapsed = shouldCollapse;
+                            if (isCollapsed) {
+                                toolbarTitle.setVisibility(View.VISIBLE);
+                                toolbarTitle.setAlpha(1f);
+                                collapsingToolbar.setTitle("");
+                            } else {
+                                toolbarTitle.setVisibility(View.INVISIBLE);
+                                toolbarTitle.setAlpha(0f);
+                                collapsingToolbar.setTitle(currentTitle);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error in toolbar animation: " + e.getMessage(), e);
                     }
                 }
             });
-
-            navView.setOnItemSelectedListener(item -> {
-                int itemId = item.getItemId();
-                int position = getPositionForMenuId(itemId);
-                if (position != -1) {
-                    viewPager.setCurrentItem(position, true); // false = no animation
-                    return true;
-                }
-                return false;
-            });
-
-            Log.d(TAG, "ViewPager and Navigation setup completed successfully");
-
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up ViewPager: " + e.getMessage(), e);
-        }
-    }
-    private int getPositionForMenuId(int menuId) {
-        if (menuId == R.id.navigation_music) {
-            return 0;
-        } else if (menuId == R.id.navigation_album) {
-            return 1;
-        } else if (menuId == R.id.navigation_artist) {
-            return 2;
-        } else if (menuId == R.id.navigation_collection) {
-            return 3;
-        }
-        return -1;
-    }
-
-    private void updateNavigationSelection(int position) {
-        switch (position) {
-            case 0:
-                navView.setSelectedItemId(R.id.navigation_music);
-                break;
-            case 1:
-                navView.setSelectedItemId(R.id.navigation_album);
-                break;
-            case 2:
-                navView.setSelectedItemId(R.id.navigation_artist);
-                break;
-            case 3:
-                navView.setSelectedItemId(R.id.navigation_collection);
-                break;
-        }
-    }
-
-    private void updateTitleForPosition(int position) {
-        switch (position) {
-            case 0:
-                currentTitle = "Music";
-                break;
-            case 1:
-                currentTitle = "Albums";
-                break;
-            case 2:
-                currentTitle = "Artist";
-                break;
-            case 3:
-                currentTitle = "Collection";
-                break;
-            case 4:
-                currentTitle = "Settings";
-                break;
-            default:
-                currentTitle = "melody";
-                break;
-        }
-
-        if (toolbarTitle != null) {
-            toolbarTitle.setText(currentTitle);
-        }
-        if (collapsingToolbar != null) {
-            collapsingToolbar.setTitle(currentTitle);
+            Log.e(TAG, "Error setting up toolbar animation: " + e.getMessage(), e);
         }
     }
 
@@ -288,6 +326,147 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // =========================================================================
+    // Navigation bar hide / show
+    // =========================================================================
+
+    private void hideNavBar() {
+        if (isActivityDestroyed || navView == null) return;
+
+        isNavVisible = false;
+
+        // Slide the nav bar down by its own height
+        navView.animate()
+                .translationY(navView.getHeight())
+                .setDuration(NAV_ANIMATION_DURATION)
+                .start();
+
+        // Slide the mini player down together with the nav bar
+        if (isMiniPlayerVisible && miniPlayerContainer != null) {
+            miniPlayerContainer.animate()
+                    .translationY(navView.getHeight())
+                    .setDuration(NAV_ANIMATION_DURATION)
+                    .start();
+        }
+    }
+
+    private void showNavBar() {
+        if (isActivityDestroyed || navView == null) return;
+
+        isNavVisible = true;
+
+        navView.animate()
+                .translationY(0f)
+                .setDuration(NAV_ANIMATION_DURATION)
+                .start();
+
+        if (isMiniPlayerVisible && miniPlayerContainer != null) {
+            miniPlayerContainer.animate()
+                    .translationY(0f)
+                    .setDuration(NAV_ANIMATION_DURATION)
+                    .start();
+        }
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerScrollDirectionReceiver() {
+        try {
+            if (!isScrollReceiverRegistered) {
+                IntentFilter filter = new IntentFilter(ACTION_NAV_SCROLL);
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    registerReceiver(scrollDirectionReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+                } else {
+                    registerReceiver(scrollDirectionReceiver, filter);
+                }
+
+                isScrollReceiverRegistered = true;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering scroll receiver: " + e.getMessage(), e);
+        }
+    }
+
+    // =========================================================================
+    // ViewPager + navigation
+    // =========================================================================
+
+    private void setupViewPagerAndNavigation() {
+        try {
+            viewPager = findViewById(R.id.view_pager);
+            navView = findViewById(R.id.nav_view);
+
+            if (viewPager == null || navView == null) {
+                Log.e(TAG, "ViewPager or BottomNavigationView is null");
+                return;
+            }
+
+            pagerAdapter = new MainViewPagerAdapter(this);
+            viewPager.setAdapter(pagerAdapter);
+            viewPager.setOffscreenPageLimit(1);
+            viewPager.setUserInputEnabled(true);
+
+            viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+                @Override
+                public void onPageSelected(int position) {
+                    super.onPageSelected(position);
+                    if (!isActivityDestroyed) {
+                        updateNavigationSelection(position);
+                        updateTitleForPosition(position);
+                        // Always restore nav bar when switching tabs
+                        showNavBar();
+                    }
+                }
+            });
+
+            navView.setOnItemSelectedListener(item -> {
+                int position = getPositionForMenuId(item.getItemId());
+                if (position != -1) {
+                    viewPager.setCurrentItem(position, true);
+                    return true;
+                }
+                return false;
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up ViewPager: " + e.getMessage(), e);
+        }
+    }
+
+    private int getPositionForMenuId(int menuId) {
+        if (menuId == R.id.navigation_music)      return 0;
+        if (menuId == R.id.navigation_album)      return 1;
+        if (menuId == R.id.navigation_artist)     return 2;
+        if (menuId == R.id.navigation_collection) return 3;
+        return -1;
+    }
+
+    private void updateNavigationSelection(int position) {
+        switch (position) {
+            case 0: navView.setSelectedItemId(R.id.navigation_music);      break;
+            case 1: navView.setSelectedItemId(R.id.navigation_album);      break;
+            case 2: navView.setSelectedItemId(R.id.navigation_artist);     break;
+            case 3: navView.setSelectedItemId(R.id.navigation_collection); break;
+        }
+    }
+
+    private void updateTitleForPosition(int position) {
+        switch (position) {
+            case 0: currentTitle = "Music";      break;
+            case 1: currentTitle = "Albums";     break;
+            case 2: currentTitle = "Artist";     break;
+            case 3: currentTitle = "Collection"; break;
+            case 4: currentTitle = "Settings";   break;
+            default: currentTitle = "melody";    break;
+        }
+        if (toolbarTitle != null)      toolbarTitle.setText(currentTitle);
+        if (collapsingToolbar != null) collapsingToolbar.setTitle(currentTitle);
+    }
+
+    // =========================================================================
+    // Refresh
+    // =========================================================================
+
     private void refreshMusicFragmentData() {
         try {
             MaterialButton refreshButton = findViewById(R.id.refresh_button);
@@ -296,21 +475,11 @@ public class MainActivity extends AppCompatActivity {
             animateRefreshButton(refreshButton);
             clearAllFragmentCaches();
 
-            int currentPosition = viewPager.getCurrentItem();
-
-            switch (currentPosition) {
-                case 0:
-                    showRefreshToast("Refreshing music library...");
-                    break;
-                case 1:
-                    showRefreshToast("Refreshing album library...");
-                    break;
-                case 2:
-                    showRefreshToast("Refreshing artist library...");
-                    break;
-                default:
-                    showRefreshToast("Refreshing library...");
-                    break;
+            switch (viewPager.getCurrentItem()) {
+                case 0: showRefreshToast("Refreshing music library...");  break;
+                case 1: showRefreshToast("Refreshing album library...");  break;
+                case 2: showRefreshToast("Refreshing artist library..."); break;
+                default: showRefreshToast("Refreshing library...");       break;
             }
 
             pagerAdapter.notifyDataSetChanged();
@@ -328,17 +497,13 @@ public class MainActivity extends AppCompatActivity {
                 .setDuration(REFRESH_ANIMATION_DURATION)
                 .setInterpolator(new LinearInterpolator())
                 .withEndAction(() -> {
-                    if (!isActivityDestroyed && refreshButton != null) {
-                        refreshButton.setRotation(0f);
-                    }
+                    if (!isActivityDestroyed && refreshButton != null) refreshButton.setRotation(0f);
                 })
                 .start();
 
         refreshButton.setEnabled(false);
         mainHandler.postDelayed(() -> {
-            if (!isActivityDestroyed && refreshButton != null) {
-                refreshButton.setEnabled(true);
-            }
+            if (!isActivityDestroyed && refreshButton != null) refreshButton.setEnabled(true);
         }, REFRESH_COOLDOWN_DURATION);
     }
 
@@ -359,14 +524,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // =========================================================================
+    // Edge-to-edge / insets
+    // =========================================================================
+
     private void enableEdgeToEdge() {
         try {
             getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
-
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                 getWindow().setNavigationBarContrastEnforced(false);
             }
-
             WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         } catch (Exception e) {
             Log.e(TAG, "Error enabling edge-to-edge: " + e.getMessage(), e);
@@ -386,6 +553,10 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Error setting up window insets: " + e.getMessage(), e);
         }
     }
+
+    // =========================================================================
+    // Music update receiver registration
+    // =========================================================================
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void registerMusicUpdateReceiver() {
@@ -410,15 +581,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // =========================================================================
+    // Mini player
+    // =========================================================================
+
     private boolean initializeMiniPlayer() {
         try {
             miniPlayerContainer = findViewById(R.id.miniPlayerContainer);
-            miniAlbumArt = findViewById(R.id.miniAlbumArt);
-            miniSongTitle = findViewById(R.id.miniSongTitle);
-            miniArtistName = findViewById(R.id.miniArtistName);
+            miniAlbumArt        = findViewById(R.id.miniAlbumArt);
+            miniSongTitle       = findViewById(R.id.miniSongTitle);
+            miniArtistName      = findViewById(R.id.miniArtistName);
             miniPlayPauseButton = findViewById(R.id.miniPlayPauseButton);
-            miniNextButton = findViewById(R.id.miniNextButton);
-            miniCloseButton = findViewById(R.id.miniCloseButton);
+            miniNextButton      = findViewById(R.id.miniNextButton);
+            miniCloseButton     = findViewById(R.id.miniCloseButton);
 
             if (miniPlayerContainer == null || miniAlbumArt == null ||
                     miniSongTitle == null || miniArtistName == null ||
@@ -437,21 +612,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupMiniPlayerClickListeners() {
         miniPlayerContainer.setOnClickListener(v -> {
-            if (!isActivityDestroyed) {
-                openNowPlayingActivity();
-            }
+            if (!isActivityDestroyed) openNowPlayingActivity();
         });
 
         miniPlayPauseButton.setOnClickListener(v -> {
-            if (!isActivityDestroyed) {
-                sendMusicServiceAction(MusicService.ACTION_TOGGLE_PLAY_PAUSE);
-            }
+            if (!isActivityDestroyed) sendMusicServiceAction(MusicService.ACTION_TOGGLE_PLAY_PAUSE);
         });
 
         miniNextButton.setOnClickListener(v -> {
-            if (!isActivityDestroyed) {
-                sendMusicServiceAction(MusicService.ACTION_NEXT);
-            }
+            if (!isActivityDestroyed) sendMusicServiceAction(MusicService.ACTION_NEXT);
         });
 
         miniCloseButton.setOnClickListener(v -> {
@@ -460,22 +629,71 @@ public class MainActivity extends AppCompatActivity {
                 hideMiniPlayer();
             }
         });
+
+        setupMiniPlayerSwipeToDismiss();
     }
 
-    private void sendMusicServiceAction(String action) {
-        try {
-            Intent serviceIntent = new Intent(this, MusicService.class);
-            serviceIntent.setAction(action);
-            startService(serviceIntent);
-        } catch (Exception e) {
-            Log.e(TAG, "Error sending service action " + action + ": " + e.getMessage(), e);
-        }
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupMiniPlayerSwipeToDismiss() {
+        final float[] startY      = {0f};
+        final boolean[] isDragging = {false};
+
+        miniPlayerContainer.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    startY[0] = event.getRawY();
+                    isDragging[0] = false;
+                    miniPlayerContainer.animate().cancel();
+                    return false;
+
+                case MotionEvent.ACTION_MOVE:
+                    float deltaY = event.getRawY() - startY[0];
+                    if (deltaY > 10f) {
+                        isDragging[0] = true;
+                        miniPlayerContainer.setTranslationY(deltaY);
+                        float progress = Math.min(deltaY / SWIPE_THRESHOLD, 1f);
+                        miniPlayerContainer.setAlpha(1f - (progress * 0.4f));
+                        return true;
+                    }
+                    return false;
+
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    float totalDelta = event.getRawY() - startY[0];
+
+                    if (isDragging[0] && totalDelta > SWIPE_THRESHOLD) {
+                        miniPlayerContainer.animate()
+                                .translationY(miniPlayerContainer.getHeight() + 50f)
+                                .alpha(0f)
+                                .setDuration(MINI_PLAYER_ANIMATION_DURATION)
+                                .withEndAction(() -> {
+                                    if (!isActivityDestroyed && miniPlayerContainer != null) {
+                                        miniPlayerContainer.setVisibility(View.GONE);
+                                        miniPlayerContainer.setTranslationY(0f);
+                                        miniPlayerContainer.setAlpha(1f);
+                                        isMiniPlayerVisible = false;
+                                        sendMusicServiceAction(MusicService.ACTION_STOP);
+                                        broadcastMiniPlayerVisibility(false);
+                                    }
+                                })
+                                .start();
+                    } else if (isDragging[0]) {
+                        miniPlayerContainer.animate()
+                                .translationY(0f)
+                                .alpha(1f)
+                                .setDuration(200)
+                                .start();
+                    }
+
+                    isDragging[0] = false;
+                    return false;
+            }
+            return false;
+        });
     }
 
     public void showMiniPlayer(MusicItem musicItem) {
-        if (isActivityDestroyed || isFinishing() || isDestroyed() || musicItem == null) {
-            return;
-        }
+        if (isActivityDestroyed || isFinishing() || isDestroyed() || musicItem == null) return;
 
         try {
             currentPlayingItem = musicItem;
@@ -488,12 +706,9 @@ public class MainActivity extends AppCompatActivity {
 
             miniSongTitle.setText(musicItem.getTitle());
             miniArtistName.setText(musicItem.getArtist());
-
             loadAlbumArt(musicItem);
 
-            if (!isMiniPlayerVisible) {
-                animateMiniPlayerIn();
-            }
+            if (!isMiniPlayerVisible) animateMiniPlayerIn();
 
             updateMiniPlayerPlayButton();
         } catch (Exception e) {
@@ -515,33 +730,34 @@ public class MainActivity extends AppCompatActivity {
 
     private void animateMiniPlayerIn() {
         isMiniPlayerVisible = true;
+        miniPlayerContainer.setAlpha(1f);
+        miniPlayerContainer.setTranslationY(0f);
         miniPlayerContainer.setVisibility(View.VISIBLE);
         miniPlayerContainer.setTranslationY(miniPlayerContainer.getHeight());
         miniPlayerContainer.animate()
                 .translationY(0)
                 .setDuration(MINI_PLAYER_ANIMATION_DURATION)
                 .withEndAction(() -> {
-                    if (!isActivityDestroyed) {
-                        broadcastMiniPlayerVisibility(true);
-                    }
+                    if (!isActivityDestroyed) broadcastMiniPlayerVisibility(true);
                 })
                 .start();
     }
 
     public void hideMiniPlayer() {
-        if (isActivityDestroyed || isFinishing() || isDestroyed()) {
-            return;
-        }
+        if (isActivityDestroyed || isFinishing() || isDestroyed()) return;
 
         try {
             if (isMiniPlayerVisible && miniPlayerContainer != null) {
                 isMiniPlayerVisible = false;
                 miniPlayerContainer.animate()
                         .translationY(miniPlayerContainer.getHeight())
+                        .alpha(0f)
                         .setDuration(MINI_PLAYER_ANIMATION_DURATION)
                         .withEndAction(() -> {
                             if (!isActivityDestroyed && miniPlayerContainer != null) {
                                 miniPlayerContainer.setVisibility(View.GONE);
+                                miniPlayerContainer.setAlpha(1f);
+                                miniPlayerContainer.setTranslationY(0f);
                                 broadcastMiniPlayerVisibility(false);
                             }
                         })
@@ -580,7 +796,9 @@ public class MainActivity extends AppCompatActivity {
         if (isActivityDestroyed || miniPlayPauseButton == null) return;
 
         try {
-            int iconRes = isPlaying ? R.drawable.ic_baseline_pause_24 : R.drawable.ic_baseline_play_arrow_24;
+            int iconRes = isPlaying
+                    ? R.drawable.ic_baseline_pause_24
+                    : R.drawable.ic_baseline_play_arrow_24;
             miniPlayPauseButton.setIconResource(iconRes);
         } catch (Exception e) {
             Log.e(TAG, "Error updating play button: " + e.getMessage(), e);
@@ -613,104 +831,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setupCollapsingToolbarTitleAnimation(AppBarLayout appBarLayout) {
-        if (appBarLayout == null) return;
-
+    private void sendMusicServiceAction(String action) {
         try {
-            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-                private boolean isCollapsed = false;
-
-                @Override
-                public void onOffsetChanged(AppBarLayout appBar, int verticalOffset) {
-                    if (isActivityDestroyed || toolbarTitle == null || collapsingToolbar == null) {
-                        return;
-                    }
-
-                    try {
-                        int totalScrollRange = appBar.getTotalScrollRange();
-                        float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
-
-                        boolean shouldCollapse = percentage > TOOLBAR_FADE_THRESHOLD;
-
-                        if (shouldCollapse != isCollapsed) {
-                            isCollapsed = shouldCollapse;
-
-                            if (isCollapsed) {
-                                toolbarTitle.setVisibility(View.VISIBLE);
-                                toolbarTitle.setAlpha(1f);
-                                collapsingToolbar.setTitle("");
-                            } else {
-                                toolbarTitle.setVisibility(View.INVISIBLE);
-                                toolbarTitle.setAlpha(0f);
-                                collapsingToolbar.setTitle(currentTitle);
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error in toolbar animation: " + e.getMessage(), e);
-                    }
-                }
-            });
+            Intent serviceIntent = new Intent(this, MusicService.class);
+            serviceIntent.setAction(action);
+            startService(serviceIntent);
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up toolbar animation: " + e.getMessage(), e);
+            Log.e(TAG, "Error sending service action " + action + ": " + e.getMessage(), e);
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        try {
-            sendMusicServiceAction(MusicService.ACTION_REQUEST_STATE);
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onResume: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        try {
-            if (miniPlayerContainer != null) {
-                miniPlayerContainer.clearAnimation();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onPause: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        isActivityDestroyed = true;
-
-        mainHandler.removeCallbacksAndMessages(null);
-
-        if (isReceiverRegistered) {
-            try {
-                unregisterReceiver(musicUpdateReceiver);
-                isReceiverRegistered = false;
-            } catch (IllegalArgumentException e) {
-                Log.w(TAG, "Receiver was not registered or already unregistered");
-            } catch (Exception e) {
-                Log.e(TAG, "Error unregistering receiver: " + e.getMessage(), e);
-            }
-        }
-
-        try {
-            currentPlayingItem = null;
-
-            if (isFinishing() && miniAlbumArt != null) {
-                try {
-                    Glide.with(getApplicationContext()).clear(miniAlbumArt);
-                } catch (Exception e) {
-                    Log.e(TAG, "Error clearing Glide: " + e.getMessage());
-                }
-            }
-
-            binding = null;
-        } catch (Exception e) {
-            Log.e(TAG, "Error clearing references: " + e.getMessage(), e);
-        }
-
-        super.onDestroy();
     }
 }

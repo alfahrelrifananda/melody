@@ -461,43 +461,18 @@ public class MusicService extends Service implements
     }
 
     private void playPrevious() {
-        if (isServiceDestroyed || playlist.isEmpty()) {
-            return;
-        }
+        if (isServiceDestroyed || playlist.isEmpty()) return;
 
         try {
-            if (mediaPlayer != null && isPlaying) {
-                try {
-                    int currentPosition = mediaPlayer.getCurrentPosition();
-
-                    if (currentPosition > 3000) {
-                        mediaPlayer.seekTo(0);
-                        updatePlaybackState();
-                        showNotification();
-                        return;
-                    }
-                } catch (IllegalStateException e) {
-                }
-            }
-
             MusicItem previousSong = getPreviousSong();
             if (previousSong != null) {
                 playMusic(previousSong);
-            } else {
-                if (mediaPlayer != null) {
-                    try {
-                        mediaPlayer.seekTo(0);
-                        updatePlaybackState();
-                        showNotification();
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error seeking to start: " + e.getMessage(), e);
-                    }
-                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in playPrevious: " + e.getMessage(), e);
         }
     }
+
 
     private void seekTo(int position) {
         if (mediaPlayer != null && isPrepared) {
@@ -519,7 +494,7 @@ public class MusicService extends Service implements
 
         if (currentIndex < 0 || currentIndex >= playlist.size()) {
             currentIndex = 0;
-            return playlist.get(currentIndex);
+            return playlist.get(0);
         }
 
         int nextIndex = currentIndex + 1;
@@ -532,12 +507,7 @@ public class MusicService extends Service implements
             }
         }
 
-        if (nextIndex >= 0 && nextIndex < playlist.size()) {
-            currentIndex = nextIndex;
-            return playlist.get(currentIndex);
-        } else {
-            return null;
-        }
+        return playlist.get(nextIndex);
     }
 
     private MusicItem getPreviousSong() {
@@ -550,6 +520,20 @@ public class MusicService extends Service implements
             return playlist.get(currentIndex);
         }
 
+        if (mediaPlayer != null && isPlaying) {
+            try {
+                int currentPosition = mediaPlayer.getCurrentPosition();
+                if (currentPosition > 3000) {
+                    mediaPlayer.seekTo(0);
+                    updatePlaybackState();
+                    showNotification();
+                    return null;
+                }
+            } catch (IllegalStateException e) {
+                // ignore
+            }
+        }
+
         int prevIndex = currentIndex - 1;
 
         if (prevIndex < 0) {
@@ -560,12 +544,7 @@ public class MusicService extends Service implements
             }
         }
 
-        if (prevIndex >= 0 && prevIndex < playlist.size()) {
-            currentIndex = prevIndex;
-            return playlist.get(currentIndex);
-        } else {
-            return null;
-        }
+        return playlist.get(prevIndex);
     }
 
     private void handleSongCompletion() {
