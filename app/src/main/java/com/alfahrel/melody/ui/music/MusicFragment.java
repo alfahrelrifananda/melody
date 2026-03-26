@@ -46,6 +46,7 @@ import com.alfahrel.melody.ui.pages.nowplaying.NowPlayingActivity;
 import com.alfahrel.melody.ui.collection.Collection;
 import com.alfahrel.melody.ui.collection.CollectionManager;
 
+import com.alfahrel.melody.utils.PlayCountManager;
 import com.alfahrel.melody.utils.SongDetailBottomSheet;
 import com.alfahrel.melody.utils.SongOptionsBottomSheet;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -79,6 +80,10 @@ public class MusicFragment extends Fragment {
 
     private MusicItem pendingDeleteItem = null;
     private ActivityResultLauncher<IntentSenderRequest> deletePermissionLauncher;
+    private enum SortMode { DEFAULT, RECENTLY_ADDED, MOST_PLAYED, A_Z, Z_A }
+    private SortMode currentSort = SortMode.DEFAULT;
+    private List<MusicItem> originalMusicList = new ArrayList<>();
+    private PlayCountManager playCountManager;
 
     private final BroadcastReceiver miniPlayerReceiver = new BroadcastReceiver() {
         @Override
@@ -112,10 +117,12 @@ public class MusicFragment extends Fragment {
 
         executorService = Executors.newSingleThreadExecutor();
         collectionManager = new CollectionManager(requireContext());
+        playCountManager = new PlayCountManager(requireContext());
 
         setupDeletePermissionLauncher();
         setupRecyclerView();
         loadMusicData();
+        setupFilterChips();
 
         return root;
     }
@@ -168,9 +175,56 @@ public class MusicFragment extends Fragment {
         binding = null;
     }
 
-    // =========================================================================
-    // Setup
-    // =========================================================================
+    private void applySort(SortMode mode) {
+        currentSort = mode;
+        List<MusicItem> sorted = new ArrayList<>(originalMusicList);
+
+        switch (mode) {
+            case RECENTLY_ADDED:
+                sorted.sort((a, b) -> Long.compare(b.getId(), a.getId()));
+                break;
+            case MOST_PLAYED:
+                sorted.sort((a, b) -> Integer.compare(
+                        playCountManager.getCount(b.getId()),
+                        playCountManager.getCount(a.getId())));
+                break;
+            case A_Z:
+                sorted.sort((a, b) -> a.getTitle().compareToIgnoreCase(b.getTitle()));
+                break;
+            case Z_A:
+                sorted.sort((a, b) -> b.getTitle().compareToIgnoreCase(a.getTitle()));
+                break;
+            case DEFAULT:
+            default:
+                break;
+        }
+
+        musicList.clear();
+        musicList.addAll(sorted);
+        if (musicAdapter != null) musicAdapter.notifyDataSetChanged();
+    }
+
+    private void setupFilterChips() {
+        binding.chipRecentlyAdded.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) applySort(SortMode.RECENTLY_ADDED);
+            else applySort(SortMode.DEFAULT);
+        });
+
+        binding.chipMostPlayed.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) applySort(SortMode.MOST_PLAYED);
+            else applySort(SortMode.DEFAULT);
+        });
+
+        binding.chipAZ.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) applySort(SortMode.A_Z);
+            else applySort(SortMode.DEFAULT);
+        });
+
+        binding.chipZA.setOnCheckedChangeListener((chip, checked) -> {
+            if (checked) applySort(SortMode.Z_A);
+            else applySort(SortMode.DEFAULT);
+        });
+    }
 
     private void setupDeletePermissionLauncher() {
         deletePermissionLauncher = registerForActivityResult(
@@ -447,11 +501,8 @@ public class MusicFragment extends Fragment {
         }
     }
 
-    // =========================================================================
-    // Playback
-    // =========================================================================
-
     private void startMusicServiceAndOpenNowPlaying(MusicItem musicItem) {
+        playCountManager.increment(musicItem.getId());
         startMusicServiceWithPlaylist(musicItem);
         new android.os.Handler().postDelayed(() -> openNowPlaying(musicItem), 200);
     }
@@ -618,6 +669,8 @@ public class MusicFragment extends Fragment {
                 int previousSize = musicList.size();
                 musicList.clear();
                 musicList.addAll(tempList);
+                originalMusicList.clear();
+                originalMusicList.addAll(tempList);
                 if (musicAdapter != null) musicAdapter.notifyDataSetChanged();
                 updateUI();
 

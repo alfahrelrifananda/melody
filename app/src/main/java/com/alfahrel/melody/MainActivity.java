@@ -248,10 +248,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             MaterialToolbar toolbar = findViewById(R.id.toolbar);
             toolbarTitle = findViewById(R.id.toolbar_title_main);
-            collapsingToolbar = findViewById(R.id.collapsing_toolbar);
-            AppBarLayout appBarLayout = findViewById(R.id.app_bar_layout);
 
-            if (toolbar == null || toolbarTitle == null || collapsingToolbar == null || appBarLayout == null) {
+            if (toolbar == null || toolbarTitle == null) {
                 Log.e(TAG, "One or more toolbar components are null");
                 return false;
             }
@@ -261,51 +259,12 @@ public class MainActivity extends AppCompatActivity {
                 getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             }
 
-            collapsingToolbar.setTitle(currentTitle);
-            setupCollapsingToolbarTitleAnimation(appBarLayout);
+            toolbarTitle.setText(getGreeting());
 
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error initializing toolbar: " + e.getMessage(), e);
             return false;
-        }
-    }
-
-    private void setupCollapsingToolbarTitleAnimation(AppBarLayout appBarLayout) {
-        if (appBarLayout == null) return;
-
-        try {
-            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-                private boolean isCollapsed = false;
-
-                @Override
-                public void onOffsetChanged(AppBarLayout appBar, int verticalOffset) {
-                    if (isActivityDestroyed || toolbarTitle == null || collapsingToolbar == null) return;
-
-                    try {
-                        int totalScrollRange = appBar.getTotalScrollRange();
-                        float percentage = Math.abs(verticalOffset) / (float) totalScrollRange;
-                        boolean shouldCollapse = percentage > TOOLBAR_FADE_THRESHOLD;
-
-                        if (shouldCollapse != isCollapsed) {
-                            isCollapsed = shouldCollapse;
-                            if (isCollapsed) {
-                                toolbarTitle.setVisibility(View.VISIBLE);
-                                toolbarTitle.setAlpha(1f);
-                                collapsingToolbar.setTitle("");
-                            } else {
-                                toolbarTitle.setVisibility(View.INVISIBLE);
-                                toolbarTitle.setAlpha(0f);
-                                collapsingToolbar.setTitle(currentTitle);
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error in toolbar animation: " + e.getMessage(), e);
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up toolbar animation: " + e.getMessage(), e);
         }
     }
 
@@ -469,15 +428,21 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateTitleForPosition(int position) {
         switch (position) {
-            case 0: currentTitle = "Music";      break;
-            case 1: currentTitle = "Albums";     break;
-            case 2: currentTitle = "Artist";     break;
-            case 3: currentTitle = "Collection"; break;
-            case 4: currentTitle = "Settings";   break;
-            default: currentTitle = "melody";    break;
+            case 0: currentTitle = getGreeting();    break;
+            case 1: currentTitle = "Albums";         break;
+            case 2: currentTitle = "Artists";        break;
+            case 3: currentTitle = "Collection";     break;
+            default: currentTitle = "melody";        break;
         }
-        if (toolbarTitle != null)      toolbarTitle.setText(currentTitle);
-        if (collapsingToolbar != null) collapsingToolbar.setTitle(currentTitle);
+        if (toolbarTitle != null) toolbarTitle.setText(currentTitle);
+    }
+
+    private String getGreeting() {
+        int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        if (hour >= 5 && hour < 12)  return "Good Morning!";
+        if (hour >= 12 && hour < 17) return "Good Afternoon!";
+        if (hour >= 17 && hour < 21) return "Good Evening!";
+        return "Good Evening!";
     }
 
     // =========================================================================

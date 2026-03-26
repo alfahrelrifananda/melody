@@ -211,14 +211,17 @@
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/miniPlayerContainer"
         android:layout_width="match_parent"
-        android:layout_height="92dp"
+        android:layout_height="82dp"
+        android:layout_marginStart="24dp"
         android:layout_gravity="bottom"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="8dp"
         app:cardCornerRadius="16dp"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        android:layout_marginBottom="24dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
         android:visibility="gone"
-        app:strokeColor="@color/transparent"
+        app:strokeWidth="2dp"
+        app:strokeColor="?attr/colorOnSurface"
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground">
@@ -291,9 +294,10 @@
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
+                android:backgroundTint="?attr/colorPrimary"
                 app:icon="@drawable/ic_baseline_play_arrow_24"
                 app:iconSize="18dp"
-                app:iconTint="?attr/colorOnSurface"
+                app:iconTint="?attr/colorSurface"
                 android:contentDescription="Play/Pause" />
 
             <com.google.android.material.button.MaterialButton
@@ -304,6 +308,7 @@
                 app:icon="@drawable/ic_baseline_skip_next_24"
                 app:iconSize="20dp"
                 app:cornerRadius="8dp"
+                android:backgroundTint="?attr/colorPrimaryContainer"
                 app:iconTint="?attr/colorOnSurface"
                 android:contentDescription="Next" />
 

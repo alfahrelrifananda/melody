@@ -38,6 +38,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         this.musicList = musicList;
         this.context = context;
     }
+
     public void setOnMusicItemLongClickListener(OnMusicItemLongClickListener listener) {
         this.longClickListener = listener;
     }
@@ -58,6 +59,9 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     public void onBindViewHolder(@NonNull MusicViewHolder holder, int position) {
         MusicItem musicItem = musicList.get(position);
 
+        // Song number
+        holder.songNumberTextView.setText(String.valueOf(position + 1));
+
         holder.titleTextView.setText(musicItem.getTitle());
         holder.artistTextView.setText(musicItem.getArtist());
 
@@ -70,22 +74,16 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
                 .into(holder.albumArtImageView);
 
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onMusicItemClick(musicItem);
-            }
+            if (listener != null) listener.onMusicItemClick(musicItem);
         });
 
         holder.itemView.setOnLongClickListener(v -> {
-            if (longClickListener != null) {
-                return longClickListener.onMusicItemLongClick(musicItem);
-            }
+            if (longClickListener != null) return longClickListener.onMusicItemLongClick(musicItem);
             return false;
         });
 
         holder.infoButton.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onOptionClick(musicItem);
-            }
+            if (listener != null) listener.onOptionClick(musicItem);
         });
     }
 
@@ -99,6 +97,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         ImageView albumArtImageView;
         TextView titleTextView;
         TextView artistTextView;
+        TextView songNumberTextView; // added
         MaterialButton infoButton;
 
         public MusicViewHolder(@NonNull View itemView) {
@@ -107,6 +106,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             albumArtImageView = itemView.findViewById(R.id.album_art_image);
             titleTextView = itemView.findViewById(R.id.song_title);
             artistTextView = itemView.findViewById(R.id.artist_name);
+            songNumberTextView = itemView.findViewById(R.id.song_number);
             infoButton = itemView.findViewById(R.id.info_button);
         }
     }

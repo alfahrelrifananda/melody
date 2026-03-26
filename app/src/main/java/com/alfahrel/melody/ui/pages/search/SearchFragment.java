@@ -245,7 +245,7 @@ public class SearchFragment extends Fragment {
             }
 
             @Override
-            public void onPlayButtonClick(MusicItem musicItem) {
+            public void onOptionClick(MusicItem musicItem) {
                 startMusicService(musicItem);
             }
         });

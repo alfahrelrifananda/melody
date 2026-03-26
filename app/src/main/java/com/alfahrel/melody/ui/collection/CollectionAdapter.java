@@ -2,17 +2,23 @@ package com.alfahrel.melody.ui.collection;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.alfahrel.melody.R;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.imageview.ShapeableImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,19 +83,13 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @Override
     public int getItemViewType(int position) {
-        if (position < collections.size()) {
-            return VIEW_TYPE_COLLECTION;
-        } else {
-            return VIEW_TYPE_ADD_BUTTON;
-        }
+        return position < collections.size() ? VIEW_TYPE_COLLECTION : VIEW_TYPE_ADD_BUTTON;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (context == null) {
-            context = parent.getContext();
-        }
+        if (context == null) context = parent.getContext();
 
         if (viewType == VIEW_TYPE_COLLECTION) {
             View view = LayoutInflater.from(parent.getContext())
@@ -105,8 +105,7 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof CollectionViewHolder) {
-            Collection collection = collections.get(position);
-            ((CollectionViewHolder) holder).bind(collection);
+            ((CollectionViewHolder) holder).bind(collections.get(position));
         } else if (holder instanceof AddButtonViewHolder) {
             ((AddButtonViewHolder) holder).bind();
         }
@@ -122,16 +121,20 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         notifyDataSetChanged();
     }
 
+    // ─── CollectionViewHolder ────────────────────────────────────────────────
+
     class CollectionViewHolder extends RecyclerView.ViewHolder {
-        private MaterialCardView cardView;
-        private TextView textName;
-        private TextView textSongCount;
+        private final MaterialCardView cardView;
+        private final TextView textName;
+        private final TextView textSongCount;
+        private final ShapeableImageView imageCoverThumb; // NEW
 
         public CollectionViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardView = itemView.findViewById(R.id.collectionCard);
-            textName = itemView.findViewById(R.id.textCollectionName);
-            textSongCount = itemView.findViewById(R.id.textSongCount);
+            cardView       = itemView.findViewById(R.id.collectionCard);
+            textName       = itemView.findViewById(R.id.textCollectionName);
+            textSongCount  = itemView.findViewById(R.id.textSongCount);
+            imageCoverThumb = itemView.findViewById(R.id.imageCoverThumb); // NEW
         }
 
         public void bind(Collection collection) {
@@ -139,6 +142,33 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
             int count = collection.getMusicIds() != null ? collection.getMusicIds().size() : 0;
             textSongCount.setText(count + (count == 1 ? " song" : " songs"));
+
+            // NEW: load cover image with Glide, fall back to music note icon
+            if (imageCoverThumb != null) {
+                String uri = collection.getCoverImageUri();
+                if (uri != null && !uri.isEmpty()) {
+                    imageCoverThumb.setPadding(0, 0, 0, 0);
+                    imageCoverThumb.clearColorFilter();
+                    Glide.with(imageCoverThumb.getContext())
+                            .load(Uri.parse(uri))
+                            .apply(new RequestOptions().centerCrop())
+                            .placeholder(R.drawable.ic_music_note_24)
+                            .error(R.drawable.ic_music_note_24)
+                            .into(imageCoverThumb);
+                } else {
+                    // Reset to placeholder state
+                    int padding = (int) (12 * itemView.getContext().getResources().getDisplayMetrics().density);
+                    imageCoverThumb.setPadding(padding, padding, padding, padding);
+                    Glide.with(imageCoverThumb.getContext()).clear(imageCoverThumb);
+                    imageCoverThumb.setImageResource(R.drawable.ic_music_note_24);
+                    imageCoverThumb.setColorFilter(
+                            androidx.core.content.ContextCompat.getColor(
+                                    itemView.getContext(),
+                                    com.google.android.material.R.color.material_on_surface_emphasis_medium
+                            )
+                    );
+                }
+            }
 
             cardView.setOnClickListener(v -> {
                 if (clickListener != null) {
@@ -160,8 +190,10 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         }
     }
 
+    // ─── AddButtonViewHolder ─────────────────────────────────────────────────
+
     class AddButtonViewHolder extends RecyclerView.ViewHolder {
-        private MaterialButton addButton;
+        private final MaterialButton addButton;
 
         public AddButtonViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -170,9 +202,7 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
 
         public void bind() {
             addButton.setOnClickListener(v -> {
-                if (addClickListener != null) {
-                    addClickListener.onAddCollectionClick();
-                }
+                if (addClickListener != null) addClickListener.onAddCollectionClick();
             });
         }
     }

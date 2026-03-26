@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="24dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp">
+
+    <!-- Cover Image Preview + Pick Button -->
+    <FrameLayout
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp">
+
+        <!-- Cover image (shown when set) -->
+        <ImageView
+            android:id="@+id/imageCoverPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+
+        <!-- Placeholder icon (shown when no image) -->
+        <LinearLayout
+            android:id="@+id/coverPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="?attr/colorSurfaceVariant"
+            android:backgroundTint="?attr/colorSurfaceVariant">
+
+            <!-- Use a simple shape background via tint on the FrameLayout -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/coverPlaceholderIcon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_music_note_24"
+                android:tint="?attr/colorOnSurfaceVariant"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="No Cover"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <!-- Edit overlay button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickCoverImage"
+            style="@style/Widget.Material3.Button.TonalButton.Icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="bottom|end"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:padding="0dp"
+            app:icon="@drawable/ic_baseline_edit_24"
+            app:iconSize="18dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            android:contentDescription="Pick cover image" />
+
+    </FrameLayout>
+
+    <!-- Remove cover button (only visible when image is set) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRemoveCover"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:text="Remove Cover"
+        android:visibility="gone"
+        android:textColor="?attr/colorError" />
+
+    <!-- Collection Name Input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/textInputCollectionName"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Collection name">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/editTextCollectionName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:imeOptions="actionDone" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>
