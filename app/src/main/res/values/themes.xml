@@ -45,4 +45,165 @@
         <item name="cornerSizeBottomRight">32dp</item>
     </style>
 
-</resources>
+    <!-- Add these styles to your res/values/styles.xml -->
+
+    <!-- Section label: "Appearance", "Playback", etc. -->
+    <style name="SettingsSectionLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">28dp</item>
+        <item name="android:paddingEnd">28dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textFontWeight">600</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:letterSpacing">0.06</item>
+    </style>
+
+    <!-- Row container (clickable horizontal strip) -->
+    <style name="SettingsItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">72dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <!-- Leading icon -->
+    <style name="SettingsIcon">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:tint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <!-- Title + subtitle vertical stack -->
+    <style name="SettingsTextBlock">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <!-- Primary label -->
+    <style name="SettingsTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <!-- Secondary label -->
+    <style name="SettingsSubtitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:layout_marginTop">1dp</item>
+    </style>
+
+    <!-- Trailing chevron for drill-down rows -->
+    <style name="SettingsArrow">
+        <item name="android:layout_width">18dp</item>
+        <item name="android:layout_height">18dp</item>
+        <item name="android:src">@drawable/ic_baseline_chevron_right_24</item>
+        <item name="android:tint">?attr/colorOnSurfaceVariant</item>
+        <item name="android:alpha">0.5</item>
+    </style>
+
+    <!-- Trailing value pill (e.g. "System", "Lossless", "A–Z") -->
+    <style name="SettingsChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?attr/colorOnSecondaryContainer</item>
+        <item name="android:background">@drawable/chip_background</item>
+    </style>
+
+    <!-- Add these styles to res/values/styles.xml -->
+
+    <!-- Detail row container -->
+    <style name="DetailRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- Leading icon in detail row -->
+    <style name="DetailRowIcon">
+        <item name="android:layout_width">20dp</item>
+        <item name="android:layout_height">20dp</item>
+        <item name="android:layout_marginEnd">14dp</item>
+        <item name="android:tint">?attr/colorOnSurfaceVariant</item>
+        <item name="android:alpha">0.7</item>
+    </style>
+
+    <!-- Vertical text block inside detail row -->
+    <style name="DetailRowText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <!-- Small muted label above the value -->
+    <style name="DetailLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:letterSpacing">0.04</item>
+        <item name="android:layout_marginBottom">1dp</item>
+    </style>
+
+    <!-- Main value text -->
+    <style name="DetailValue">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="SongOptionRow">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">56dp</item>
+    <item name="android:orientation">horizontal</item>
+    <item name="android:paddingStart">20dp</item>
+    <item name="android:paddingEnd">20dp</item>
+    <item name="android:gravity">center_vertical</item>
+    <item name="android:background">?attr/selectableItemBackground</item>
+    <item name="android:clickable">true</item>
+    <item name="android:focusable">true</item>
+</style>
+
+<style name="SongOptionIcon">
+<item name="android:layout_width">20dp</item>
+<item name="android:layout_height">20dp</item>
+<item name="android:layout_gravity">center</item>
+</style>
+
+<style name="SongOptionLabel">
+<item name="android:layout_width">0dp</item>
+<item name="android:layout_height">wrap_content</item>
+<item name="android:layout_weight">1</item>
+<item name="android:textSize">15sp</item>
+<item name="android:textColor">?attr/colorOnSurface</item>
+</style>
+
+
+    </resources>

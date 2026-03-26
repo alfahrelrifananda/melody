@@ -71,11 +71,12 @@
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/play_button"
-            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:id="@+id/info_button"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            app:icon="@drawable/ic_baseline_play_arrow_24"
+            app:iconTint="?attr/colorOnSurface"
+            android:backgroundTint="@color/transparent"
+            app:icon="@drawable/ic_baseline_more_vert_24"
             app:iconSize="20dp"
             app:iconGravity="textStart"
             app:iconPadding="0dp"

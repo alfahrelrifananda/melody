@@ -47,6 +47,9 @@
         <activity android:name=".ui.pages.search.SearchActivity"
             android:windowSoftInputMode="adjustResize|stateVisible"
             />
+        <activity
+            android:name=".ui.pages.settings.SettingsActivity"
+            android:exported="false" />
         <service
             android:name=".service.MusicService"
             android:enabled="true"

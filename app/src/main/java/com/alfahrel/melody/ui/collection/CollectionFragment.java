@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +23,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.alfahrel.melody.R;
 import com.alfahrel.melody.databinding.FragmentCollectionBinding;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -168,6 +173,25 @@ public class CollectionFragment extends Fragment {
                 .inflate(R.layout.dialog_add_collection, null);
 
         EditText editTextName = dialogView.findViewById(R.id.editTextCollectionName);
+        TextInputLayout textInputLayout = dialogView.findViewById(R.id.textInputCollectionName);
+
+        int[] attrsToResolve = {
+                com.google.android.material.R.attr.colorOnSurface,
+                com.google.android.material.R.attr.colorOnSurfaceVariant
+        };
+        TypedArray ta = requireContext().obtainStyledAttributes(attrsToResolve);
+        int colorPrimary   = ta.getColor(0, Color.BLACK);
+        int colorOnSurface = ta.getColor(1, Color.GRAY);
+        ta.recycle();
+
+        int[][] states = new int[][] {
+                new int[] { android.R.attr.state_focused },
+                new int[] {}  // default
+        };
+        int[] colors = new int[] { colorPrimary, colorOnSurface };
+
+        textInputLayout.setBoxStrokeColorStateList(new ColorStateList(states, colors));
+
 
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("New Collection")

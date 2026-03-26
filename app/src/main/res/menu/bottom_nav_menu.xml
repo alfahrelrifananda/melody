@@ -24,9 +24,4 @@
         android:title="@string/title_collection" />
 
 
-<!--        <item-->
-<!--            android:id="@+id/navigation_settings"-->
-<!--            android:icon="@drawable/ic_settings_settings_input_component_24"-->
-<!--            android:title="@string/title_settings" />-->
-
 </menu>

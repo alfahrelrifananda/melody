@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/settings_app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/settings_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:elevation="0dp"
+            app:navigationIcon="@drawable/ic_outline_arrow_back_24"
+            app:navigationIconTint="?attr/colorOnSurface"
+            app:title="Settings"
+            app:titleTextColor="?attr/colorOnSurface"
+            app:titleTextAppearance="?attr/textAppearanceTitleLarge" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/settings_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="40dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp">
+
+            <!-- APPEARANCE -->
+            <TextView
+                style="@style/SettingsSectionLabel"
+                android:text="Appearance"
+                android:paddingTop="20dp" />
+
+            <LinearLayout android:id="@+id/setting_theme" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_palette_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Theme" />
+                    <TextView style="@style/SettingsSubtitle" android:text="System default" />
+                </LinearLayout>
+                <TextView style="@style/SettingsChip" android:text="System" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_dynamic_color" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_color_lens_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Dynamic color" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Use wallpaper colors (Android 12+)" />
+                </LinearLayout>
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_dynamic_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:layout_gravity="center_vertical" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_album_art_color" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_photo_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Album art color extraction" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Tint player UI from cover art" />
+                </LinearLayout>
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_album_art_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    android:layout_gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- LIBRARY -->
+            <TextView style="@style/SettingsSectionLabel" android:text="Library" android:paddingTop="24dp" />
+
+            <LinearLayout android:id="@+id/setting_scan_folders" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_folder_open_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Scan folders" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Choose which folders to include" />
+                </LinearLayout>
+                <ImageView style="@style/SettingsArrow" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_auto_scan" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_baseline_refresh_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Scan on startup" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Automatically find new music" />
+                </LinearLayout>
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_auto_scan"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    android:layout_gravity="center_vertical" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_sort_order" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_sort_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Default sort order" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Title A–Z" />
+                </LinearLayout>
+                <TextView style="@style/SettingsChip" android:text="A–Z" />
+            </LinearLayout>
+            <!-- ABOUT -->
+            <TextView style="@style/SettingsSectionLabel" android:text="About" android:paddingTop="24dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="0dp"
+                app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="melody"
+                            android:textSize="20sp"
+                            android:textFontWeight="600"
+                            android:textColor="?attr/colorOnSurface" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Version 1.0.0 · Build 1"
+                            android:textSize="13sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                        app:cardCornerRadius="12dp"
+                        app:strokeWidth="0dp"
+                        app:cardElevation="0dp">
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_outline_music_note_24"
+                            android:tint="?attr/colorOnPrimaryContainer" />
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout android:id="@+id/setting_changelog" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_new_releases_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="What's new" />
+                    <TextView style="@style/SettingsSubtitle" android:text="View changelog" />
+                </LinearLayout>
+                <ImageView style="@style/SettingsArrow" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_licenses" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_description_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="Open source licenses" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Third-party libraries used" />
+                </LinearLayout>
+                <ImageView style="@style/SettingsArrow" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/setting_github" style="@style/SettingsItem">
+                <ImageView style="@style/SettingsIcon" android:src="@drawable/ic_outline_code_24" />
+                <LinearLayout style="@style/SettingsTextBlock">
+                    <TextView style="@style/SettingsTitle" android:text="GitHub" />
+                    <TextView style="@style/SettingsSubtitle" android:text="Source code and contributions" />
+                </LinearLayout>
+                <ImageView style="@style/SettingsArrow" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

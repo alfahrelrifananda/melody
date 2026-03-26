@@ -35,6 +35,8 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.alfahrel.melody.utils.SongDetailBottomSheet;
+import com.alfahrel.melody.utils.SongOptionsBottomSheet;
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -379,8 +381,8 @@ public class ArtistDetailActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onPlayButtonClick(MusicItem musicItem) {
-                    startMusicService(musicItem);
+                public void onOptionClick(MusicItem musicItem) {
+                    showSongOptionsSheet(musicItem);
                 }
             });
 
@@ -392,6 +394,32 @@ public class ArtistDetailActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "Error setting up RecyclerView: " + e.getMessage(), e);
         }
+    }
+
+    private void showSongOptionsSheet(MusicItem musicItem) {
+        if (musicItem == null) return;
+
+        SongOptionsBottomSheet sheet = SongOptionsBottomSheet.newInstance(musicItem);
+        sheet.setListener(new SongOptionsBottomSheet.SongOptionsListener() {
+
+            @Override
+            public void onAddToCollection(MusicItem item) {
+                showAddToCollectionBottomSheet(item);
+            }
+
+            @Override
+            public void onViewDetails(MusicItem item) {
+                SongDetailBottomSheet.newInstance(item)
+                        .show(getSupportFragmentManager(), "song_detail");
+            }
+
+            @Override
+            public void onDelete(MusicItem item) {
+                showDeleteConfirmationDialog(item);
+            }
+        });
+
+        sheet.show(getSupportFragmentManager(), "song_options");
     }
 
     private void showSongOptionsDialog(MusicItem musicItem) {

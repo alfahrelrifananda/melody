@@ -67,7 +67,7 @@
                         app:iconTint="?attr/colorOnSurfaceVariant"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:backgroundTint="?attr/colorSurfaceContainer"
+                        android:backgroundTint="?attr/colorSurfaceContainerHigh"
                         app:cornerRadius="24dp" />
 
                     <com.google.android.material.button.MaterialButton
@@ -81,7 +81,21 @@
                         app:iconTint="?attr/colorOnSurfaceVariant"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:backgroundTint="?attr/colorSurfaceContainer"
+                        android:backgroundTint="?attr/colorSurfaceContainerHigh"
+                        app:cornerRadius="24dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/settings_button"
+                        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+                        android:layout_width="45dp"
+                        android:layout_height="38dp"
+                        app:icon="@drawable/ic_outline_settings_24"
+                        app:iconSize="24dp"
+                        app:iconGravity="textStart"
+                        app:iconTint="?attr/colorOnSurfaceVariant"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:backgroundTint="?attr/colorSurfaceContainerHigh"
                         app:cornerRadius="24dp" />
 
                 </LinearLayout>
@@ -110,15 +124,16 @@
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/miniPlayerContainer"
             android:layout_width="match_parent"
-            android:layout_height="92dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
+            android:layout_height="82dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
             android:layout_marginTop="8dp"
             app:cardCornerRadius="16dp"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="?attr/colorSurface"
+            android:layout_marginBottom="4dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
             android:visibility="gone"
-            app:strokeColor="@color/transparent"
+            app:strokeWidth="2dp"
+            app:strokeColor="?attr/colorOnSurface"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
@@ -191,9 +206,10 @@
                     android:insetBottom="0dp"
                     android:insetLeft="0dp"
                     android:insetRight="0dp"
+                    android:backgroundTint="?attr/colorPrimary"
                     app:icon="@drawable/ic_baseline_play_arrow_24"
                     app:iconSize="18dp"
-                    app:iconTint="?attr/colorOnSurface"
+                    app:iconTint="?attr/colorSurface"
                     android:contentDescription="Play/Pause" />
 
                 <com.google.android.material.button.MaterialButton
@@ -204,6 +220,7 @@
                     app:icon="@drawable/ic_baseline_skip_next_24"
                     app:iconSize="20dp"
                     app:cornerRadius="8dp"
+                    android:backgroundTint="?attr/colorPrimaryContainer"
                     app:iconTint="?attr/colorOnSurface"
                     android:contentDescription="Next" />
 
@@ -239,6 +256,8 @@
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="24dp"
             android:paddingTop="8dp"
+            android:paddingRight="24dp"
+            android:paddingLeft="24dp"
             android:paddingBottom="8dp"
             app:labelVisibilityMode="labeled"
             android:theme="@style/BottomNavigationView"

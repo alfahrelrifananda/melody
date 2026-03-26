@@ -366,7 +366,7 @@ public class CollectionDetailActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onPlayButtonClick(MusicItem musicItem) {
+                public void onOptionClick(MusicItem musicItem) {
                     startMusicService(musicItem);
                 }
             });

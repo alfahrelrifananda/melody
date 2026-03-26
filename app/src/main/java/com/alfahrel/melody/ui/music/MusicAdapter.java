@@ -27,7 +27,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
 
     public interface OnMusicItemClickListener {
         void onMusicItemClick(MusicItem musicItem);
-        void onPlayButtonClick(MusicItem musicItem);
+        void onOptionClick(MusicItem musicItem);
     }
 
     public interface OnMusicItemLongClickListener {
@@ -82,9 +82,9 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             return false;
         });
 
-        holder.playButton.setOnClickListener(v -> {
+        holder.infoButton.setOnClickListener(v -> {
             if (listener != null) {
-                listener.onPlayButtonClick(musicItem);
+                listener.onOptionClick(musicItem);
             }
         });
     }
@@ -99,7 +99,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         ImageView albumArtImageView;
         TextView titleTextView;
         TextView artistTextView;
-        MaterialButton playButton;
+        MaterialButton infoButton;
 
         public MusicViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -107,7 +107,7 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             albumArtImageView = itemView.findViewById(R.id.album_art_image);
             titleTextView = itemView.findViewById(R.id.song_title);
             artistTextView = itemView.findViewById(R.id.artist_name);
-            playButton = itemView.findViewById(R.id.play_button);
+            infoButton = itemView.findViewById(R.id.info_button);
         }
     }
 }

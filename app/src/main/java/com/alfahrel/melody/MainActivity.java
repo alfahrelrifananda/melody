@@ -17,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.alfahrel.melody.ui.pages.search.SearchActivity;
+import com.alfahrel.melody.ui.pages.settings.SettingsActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -45,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int NAV_ANIMATION_DURATION = 250;
     private static final float TOOLBAR_FADE_THRESHOLD = 0.7f;
     private static final float SWIPE_THRESHOLD = 150f;
+    private static final float SWIPE_VERTICAL_THRESHOLD   = 150f;
+    private static final float SWIPE_HORIZONTAL_THRESHOLD = 200f;
+    private static final float SWIPE_ANGLE_LIMIT          = 35f;
 
     public static final String ACTION_NAV_SCROLL = "NAV_SCROLL_DIRECTION";
 
@@ -182,11 +186,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        try {
-            if (miniPlayerContainer != null) miniPlayerContainer.clearAnimation();
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onPause: " + e.getMessage(), e);
-        }
+//        try {
+//            if (miniPlayerContainer != null) miniPlayerContainer.clearAnimation();
+//        } catch (Exception e) {
+//            Log.e(TAG, "Error in onPause: " + e.getMessage(), e);
+//        }
     }
 
     @Override
@@ -311,8 +315,19 @@ public class MainActivity extends AppCompatActivity {
             if (refreshButton != null) {
                 refreshButton.setOnClickListener(v -> refreshMusicFragmentData());
             }
+            setupSettingsButton();
         } catch (Exception e) {
             Log.e(TAG, "Error setting up toolbar actions: " + e.getMessage(), e);
+        }
+    }
+
+    private void setupSettingsButton() {
+        MaterialButton settingsButton = findViewById(R.id.settings_button);
+        if (settingsButton != null) {
+            settingsButton.setOnClickListener(v -> {
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -332,19 +347,20 @@ public class MainActivity extends AppCompatActivity {
 
     private void hideNavBar() {
         if (isActivityDestroyed || navView == null) return;
-
+        if (!isNavVisible) return;
         isNavVisible = false;
 
-        // Slide the nav bar down by its own height
+        float navSlide = navView.getHeight() + 75f;
         navView.animate()
-                .translationY(navView.getHeight())
+                .translationY(navSlide)
                 .setDuration(NAV_ANIMATION_DURATION)
                 .start();
 
-        // Slide the mini player down together with the nav bar
         if (isMiniPlayerVisible && miniPlayerContainer != null) {
+            // Move mini-player down by the same amount so they stay adjacent.
+            float current = miniPlayerContainer.getTranslationY();
             miniPlayerContainer.animate()
-                    .translationY(navView.getHeight())
+                    .translationY(current + navSlide)
                     .setDuration(NAV_ANIMATION_DURATION)
                     .start();
         }
@@ -352,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showNavBar() {
         if (isActivityDestroyed || navView == null) return;
-
+        if (isNavVisible) return;
         isNavVisible = true;
 
         navView.animate()
@@ -367,6 +383,7 @@ public class MainActivity extends AppCompatActivity {
                     .start();
         }
     }
+
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void registerScrollDirectionReceiver() {
@@ -635,62 +652,137 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void setupMiniPlayerSwipeToDismiss() {
-        final float[] startY      = {0f};
-        final boolean[] isDragging = {false};
+        final float[] startX     = {0f};
+        final float[] startY     = {0f};
+        final boolean[] dragging = {false};
+        // Track which axis the gesture was locked onto.
+        // null = undecided, "H" = horizontal, "V" = vertical
+        final String[] axis      = {null};
 
         miniPlayerContainer.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    startY[0] = event.getRawY();
-                    isDragging[0] = false;
-                    miniPlayerContainer.animate().cancel();
-                    return false;
 
-                case MotionEvent.ACTION_MOVE:
-                    float deltaY = event.getRawY() - startY[0];
-                    if (deltaY > 10f) {
-                        isDragging[0] = true;
-                        miniPlayerContainer.setTranslationY(deltaY);
-                        float progress = Math.min(deltaY / SWIPE_THRESHOLD, 1f);
-                        miniPlayerContainer.setAlpha(1f - (progress * 0.4f));
-                        return true;
+                case MotionEvent.ACTION_DOWN:
+                    startX[0]   = event.getRawX();
+                    startY[0]   = event.getRawY();
+                    dragging[0] = false;
+                    axis[0]     = null;
+                    // Cancel any running animator so translationY is stable.
+                    miniPlayerContainer.animate().cancel();
+                    // Return TRUE here so we own the gesture from the start.
+                    // This prevents the click listener firing at the end of drags.
+                    return true;
+
+                case MotionEvent.ACTION_MOVE: {
+                    float dx = event.getRawX() - startX[0];
+                    float dy = event.getRawY() - startY[0];
+                    float dist = (float) Math.sqrt(dx * dx + dy * dy);
+
+                    // Lock axis once the finger has moved far enough.
+                    if (axis[0] == null && dist > 12f) {
+                        float angleDeg = (float) Math.toDegrees(Math.abs(Math.atan2(dy, dx)));
+                        // angleDeg: 0° = pure right, 90° = pure down
+                        if (angleDeg <= SWIPE_ANGLE_LIMIT || angleDeg >= (180f - SWIPE_ANGLE_LIMIT)) {
+                            axis[0] = "H";
+                        } else if (angleDeg >= (90f - SWIPE_ANGLE_LIMIT) && angleDeg <= (90f + SWIPE_ANGLE_LIMIT)) {
+                            axis[0] = "V";
+                        } else {
+                            // Diagonal – treat as vertical for safety
+                            axis[0] = "V";
+                        }
+                        dragging[0] = true;
                     }
-                    return false;
+
+                    if (!dragging[0]) return true;
+
+                    if ("V".equals(axis[0])) {
+                        // Only allow downward swipe (dismissal direction)
+                        float clampedDy = Math.max(0f, dy);
+                        miniPlayerContainer.setTranslationY(clampedDy);
+                        float progress = Math.min(clampedDy / SWIPE_VERTICAL_THRESHOLD, 1f);
+                        miniPlayerContainer.setAlpha(1f - progress * 0.5f);
+
+                    } else { // "H"
+                        miniPlayerContainer.setTranslationX(dx);
+                        float progress = Math.min(Math.abs(dx) / SWIPE_HORIZONTAL_THRESHOLD, 1f);
+                        miniPlayerContainer.setAlpha(1f - progress * 0.6f);
+                    }
+                    return true;
+                }
 
                 case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
-                    float totalDelta = event.getRawY() - startY[0];
+                case MotionEvent.ACTION_CANCEL: {
+                    float dx = event.getRawX() - startX[0];
+                    float dy = event.getRawY() - startY[0];
 
-                    if (isDragging[0] && totalDelta > SWIPE_THRESHOLD) {
+                    if (!dragging[0]) {
+                        // Short tap with no real movement → open NowPlaying.
+                        miniPlayerContainer.setTranslationX(0f);
+                        miniPlayerContainer.setTranslationY(0f);
+                        miniPlayerContainer.setAlpha(1f);
+                        if (event.getAction() == MotionEvent.ACTION_UP) {
+                            openNowPlayingActivity();
+                        }
+                        return true;
+                    }
+
+                    boolean dismiss = false;
+
+                    if ("V".equals(axis[0]) && dy > SWIPE_VERTICAL_THRESHOLD) {
+                        dismiss = true;
+                        float targetY = miniPlayerContainer.getHeight() + 50f;
                         miniPlayerContainer.animate()
-                                .translationY(miniPlayerContainer.getHeight() + 50f)
+                                .translationY(targetY)
+                                .translationX(0f)
                                 .alpha(0f)
                                 .setDuration(MINI_PLAYER_ANIMATION_DURATION)
-                                .withEndAction(() -> {
-                                    if (!isActivityDestroyed && miniPlayerContainer != null) {
-                                        miniPlayerContainer.setVisibility(View.GONE);
-                                        miniPlayerContainer.setTranslationY(0f);
-                                        miniPlayerContainer.setAlpha(1f);
-                                        isMiniPlayerVisible = false;
-                                        sendMusicServiceAction(MusicService.ACTION_STOP);
-                                        broadcastMiniPlayerVisibility(false);
-                                    }
-                                })
+                                .withEndAction(dismissRunnable)
                                 .start();
-                    } else if (isDragging[0]) {
+
+                    } else if ("H".equals(axis[0]) && Math.abs(dx) > SWIPE_HORIZONTAL_THRESHOLD) {
+                        dismiss = true;
+                        float targetX = dx > 0
+                                ? miniPlayerContainer.getWidth() + 50f
+                                : -(miniPlayerContainer.getWidth() + 50f);
                         miniPlayerContainer.animate()
+                                .translationX(targetX)
+                                .translationY(0f)
+                                .alpha(0f)
+                                .setDuration(MINI_PLAYER_ANIMATION_DURATION)
+                                .withEndAction(dismissRunnable)
+                                .start();
+                    }
+
+                    if (!dismiss) {
+                        // Snap back to resting position
+                        miniPlayerContainer.animate()
+                                .translationX(0f)
                                 .translationY(0f)
                                 .alpha(1f)
                                 .setDuration(200)
                                 .start();
                     }
 
-                    isDragging[0] = false;
-                    return false;
+                    dragging[0] = false;
+                    axis[0]     = null;
+                    return true;
+                }
             }
             return false;
         });
     }
+
+    private final Runnable dismissRunnable = () -> {
+        if (isActivityDestroyed || miniPlayerContainer == null) return;
+        miniPlayerContainer.setVisibility(View.GONE);
+        miniPlayerContainer.setTranslationX(0f);
+        miniPlayerContainer.setTranslationY(0f);
+        miniPlayerContainer.setAlpha(1f);
+        isMiniPlayerVisible = false;
+        sendMusicServiceAction(MusicService.ACTION_STOP);
+        broadcastMiniPlayerVisibility(false);
+    };
+
 
     public void showMiniPlayer(MusicItem musicItem) {
         if (isActivityDestroyed || isFinishing() || isDestroyed() || musicItem == null) return;
@@ -730,12 +822,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void animateMiniPlayerIn() {
         isMiniPlayerVisible = true;
-        miniPlayerContainer.setAlpha(1f);
-        miniPlayerContainer.setTranslationY(0f);
-        miniPlayerContainer.setVisibility(View.VISIBLE);
+        miniPlayerContainer.setAlpha(0f);
+        miniPlayerContainer.setTranslationX(0f);
         miniPlayerContainer.setTranslationY(miniPlayerContainer.getHeight());
+        miniPlayerContainer.setVisibility(View.VISIBLE);
         miniPlayerContainer.animate()
-                .translationY(0)
+                .translationY(0f)
+                .alpha(1f)
                 .setDuration(MINI_PLAYER_ANIMATION_DURATION)
                 .withEndAction(() -> {
                     if (!isActivityDestroyed) broadcastMiniPlayerVisibility(true);
@@ -743,29 +836,26 @@ public class MainActivity extends AppCompatActivity {
                 .start();
     }
 
+
     public void hideMiniPlayer() {
         if (isActivityDestroyed || isFinishing() || isDestroyed()) return;
+        if (!isMiniPlayerVisible || miniPlayerContainer == null) return;
 
-        try {
-            if (isMiniPlayerVisible && miniPlayerContainer != null) {
-                isMiniPlayerVisible = false;
-                miniPlayerContainer.animate()
-                        .translationY(miniPlayerContainer.getHeight())
-                        .alpha(0f)
-                        .setDuration(MINI_PLAYER_ANIMATION_DURATION)
-                        .withEndAction(() -> {
-                            if (!isActivityDestroyed && miniPlayerContainer != null) {
-                                miniPlayerContainer.setVisibility(View.GONE);
-                                miniPlayerContainer.setAlpha(1f);
-                                miniPlayerContainer.setTranslationY(0f);
-                                broadcastMiniPlayerVisibility(false);
-                            }
-                        })
-                        .start();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error hiding mini player: " + e.getMessage(), e);
-        }
+        isMiniPlayerVisible = false;
+        miniPlayerContainer.animate()
+                .translationY(miniPlayerContainer.getHeight())
+                .translationX(0f)
+                .alpha(0f)
+                .setDuration(MINI_PLAYER_ANIMATION_DURATION)
+                .withEndAction(() -> {
+                    if (isActivityDestroyed || miniPlayerContainer == null) return;
+                    miniPlayerContainer.setVisibility(View.GONE);
+                    miniPlayerContainer.setAlpha(1f);
+                    miniPlayerContainer.setTranslationX(0f);
+                    miniPlayerContainer.setTranslationY(0f);
+                    broadcastMiniPlayerVisibility(false);
+                })
+                .start();
     }
 
     private void broadcastMiniPlayerVisibility(boolean isVisible) {

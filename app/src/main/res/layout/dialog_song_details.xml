@@ -1,119 +1,167 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:orientation="vertical">
 
+    <!-- Drag handle -->
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bottom_sheet_handle" />
+
+    <!-- Header: album art + title + artist -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="20dp"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Title"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            app:cardCornerRadius="10dp"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="0dp"
+            app:cardElevation="0dp">
 
-        <TextView
-            android:id="@+id/detailTitleText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Song Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_marginBottom="16dp" />
+            <ImageView
+                android:id="@+id/detailAlbumArt"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/ic_outline_music_note_24" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Artist"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
+        </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/detailArtistText"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Artist Name"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_marginBottom="16dp" />
+            android:layout_weight="1"
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Album"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
+            <TextView
+                android:id="@+id/detailTitleText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Song Title"
+                android:textSize="16sp"
+                android:textFontWeight="600"
+                android:textColor="?attr/colorOnSurface"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-        <TextView
-            android:id="@+id/detailAlbumText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Album Name"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_marginBottom="16dp" />
+            <TextView
+                android:id="@+id/detailArtistText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Artist Name"
+                android:textSize="13sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Duration"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/detailDurationText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="00:00"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="File Size"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/detailFileSizeText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="0 MB"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="File Path"
-            android:textSize="12sp"
-            android:textColor="?android:attr/textColorSecondary"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/detailPathText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="/storage/emulated/0/Music/song.mp3"
-            android:textSize="14sp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:ellipsize="middle"
-            android:singleLine="false" />
+        </LinearLayout>
 
     </LinearLayout>
 
-</ScrollView>
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="?attr/colorOutlineVariant"
+        android:alpha="0.5" />
+
+    <!-- Detail rows -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <!-- Album -->
+        <LinearLayout style="@style/DetailRow">
+            <ImageView style="@style/DetailRowIcon" android:src="@drawable/ic_outline_album_24" />
+            <LinearLayout style="@style/DetailRowText">
+                <TextView style="@style/DetailLabel" android:text="Album" />
+                <TextView android:id="@+id/detailAlbumText" style="@style/DetailValue" android:text="Album Name" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Duration -->
+        <LinearLayout style="@style/DetailRow">
+            <ImageView style="@style/DetailRowIcon" android:src="@drawable/ic_outline_timer_24" />
+            <LinearLayout style="@style/DetailRowText">
+                <TextView style="@style/DetailLabel" android:text="Duration" />
+                <TextView android:id="@+id/detailDurationText" style="@style/DetailValue" android:text="0:00" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- File size -->
+        <LinearLayout style="@style/DetailRow">
+            <ImageView style="@style/DetailRowIcon" android:src="@drawable/ic_outline_storage_24" />
+            <LinearLayout style="@style/DetailRowText">
+                <TextView style="@style/DetailLabel" android:text="File size" />
+                <TextView android:id="@+id/detailFileSizeText" style="@style/DetailValue" android:text="0 MB" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- File path -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:gravity="top">
+
+            <ImageView
+                style="@style/DetailRowIcon"
+                android:src="@drawable/ic_outline_folder_open_24"
+                android:layout_marginTop="2dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView style="@style/DetailLabel" android:text="File path" />
+                <TextView
+                    android:id="@+id/detailPathText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="/storage/emulated/0/Music/song.mp3"
+                    android:textSize="13sp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:lineSpacingMultiplier="1.3"
+                    android:layout_marginTop="1dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Bottom padding for nav bar -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
+
+</LinearLayout>
