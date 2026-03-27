@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -41,6 +42,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.widget.ImageButton;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 public class CollectionFragment extends Fragment {
 
@@ -329,18 +332,79 @@ public class CollectionFragment extends Fragment {
     }
 
     private void onCollectionLongClick(Collection collection) {
-        String[] options = { "Edit Collection", "Delete Collection" };
+        showCollectionOptionsSheet(collection);
+    }
 
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(collection.getName())
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        showEditCollectionDialog(collection);
-                    } else {
-                        confirmDelete(collection);
-                    }
-                })
-                .show();
+    private void showCollectionOptionsSheet(Collection collection) {
+        View sheetView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.bottom_sheet_collection_options, null);
+
+        // Create sheet FIRST so lambdas can reference it
+        BottomSheetDialog sheet = new BottomSheetDialog(requireContext());
+        sheet.setContentView(sheetView);
+
+        // Bind header
+        ImageView coverImg  = sheetView.findViewById(R.id.optionsCollectionCover);
+        View      coverPH   = sheetView.findViewById(R.id.optionsCoverPlaceholder);
+        TextView  nameView  = sheetView.findViewById(R.id.optionsCollectionName);
+        TextView  countView = sheetView.findViewById(R.id.optionsSongCount);
+        TextView  optionPin = sheetView.findViewById(R.id.optionPinLabel);
+
+        nameView.setText(collection.getName());
+        int count = collection.getMusicIds() != null ? collection.getMusicIds().size() : 0;
+        countView.setText(count + (count == 1 ? " song" : " songs"));
+
+        optionPin.setText(collection.isPinned() ? "Unpin from Home" : "Pin to Home");
+
+        String uri = collection.getCoverImageUri();
+        if (uri != null && !uri.isEmpty()) {
+            coverImg.setVisibility(View.VISIBLE);
+            if (coverPH != null) coverPH.setVisibility(View.GONE);
+            Glide.with(this).load(Uri.parse(uri)).centerCrop().into(coverImg);
+        } else {
+            coverImg.setVisibility(View.GONE);
+            if (coverPH != null) coverPH.setVisibility(View.VISIBLE);
+        }
+
+        sheetView.findViewById(R.id.optionPinCollection).setOnClickListener(v -> {
+            sheet.dismiss();
+            togglePin(collection);
+        });
+
+        sheetView.findViewById(R.id.optionEditCollection).setOnClickListener(v -> {
+            sheet.dismiss();
+            showEditCollectionDialog(collection);
+        });
+
+        sheetView.findViewById(R.id.optionDeleteCollection).setOnClickListener(v -> {
+            sheet.dismiss();
+            confirmDelete(collection);
+        });
+
+        sheet.show();
+    }
+
+    private void togglePin(Collection collection) {
+        executorService.execute(() -> {
+            List<Collection> collections = loadCollections();
+            boolean nowPinned = false;
+            for (Collection c : collections) {
+                if (c.getId() == collection.getId()) {
+                    nowPinned = !c.isPinned();
+                    c.setPinned(nowPinned);
+                    break;
+                }
+            }
+            saveCollections(collections);
+            final boolean pinned = nowPinned;
+            requireActivity().runOnUiThread(() -> {
+                adapter.updateCollections(collections);
+                broadcastCollectionChange(ACTION_COLLECTION_CHANGED);
+                Toast.makeText(requireContext(),
+                        pinned ? "Pinned to Home" : "Unpinned from Home",
+                        Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     private void confirmDelete(Collection collection) {

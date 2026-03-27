@@ -23,6 +23,7 @@ public class SongOptionsBottomSheet extends BottomSheetDialogFragment {
         void onAddToCollection(MusicItem item);
         void onViewDetails(MusicItem item);
         void onDelete(MusicItem item);
+        void onPin(MusicItem item);
     }
 
     private SongOptionsListener listener;
@@ -60,9 +61,9 @@ public class SongOptionsBottomSheet extends BottomSheetDialogFragment {
         final MusicItem musicItem = item;
 
         // Header
-        ImageView albumArt  = view.findViewById(R.id.optionsAlbumArt);
-        TextView  title     = view.findViewById(R.id.optionsSongTitle);
-        TextView  artist    = view.findViewById(R.id.optionsArtistName);
+        ImageView albumArt = view.findViewById(R.id.optionsAlbumArt);
+        TextView  title    = view.findViewById(R.id.optionsSongTitle);
+        TextView  artist   = view.findViewById(R.id.optionsArtistName);
 
         title.setText(musicItem.getTitle());
         artist.setText(musicItem.getArtist());
@@ -73,6 +74,12 @@ public class SongOptionsBottomSheet extends BottomSheetDialogFragment {
                 .error(R.drawable.ic_outline_music_note_24)
                 .into(albumArt);
 
+        // Pin label reflects current state
+        TextView pinLabel = view.findViewById(R.id.optionPinLabel);
+        if (pinLabel != null) {
+            pinLabel.setText(musicItem.isPinned() ? "Unpin from Home" : "Pin to Home");
+        }
+
         // Actions
         bindAction(view, R.id.optionAddToCollection, () -> {
             if (listener != null) listener.onAddToCollection(musicItem);
@@ -81,6 +88,11 @@ public class SongOptionsBottomSheet extends BottomSheetDialogFragment {
 
         bindAction(view, R.id.optionViewDetails, () -> {
             if (listener != null) listener.onViewDetails(musicItem);
+            dismiss();
+        });
+
+        bindAction(view, R.id.optionPinSong, () -> {
+            if (listener != null) listener.onPin(musicItem);
             dismiss();
         });
 

@@ -25,6 +25,7 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.ArtistView
     public interface OnArtistItemClickListener {
         void onArtistItemClick(ArtistItem artistItem);
         void onPlayButtonClick(ArtistItem artistItem);
+        void onPinClick(ArtistItem artistItem);
     }
 
     public ArtistAdapter(List<ArtistItem> artistList, Context context) {
@@ -52,17 +53,17 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.ArtistView
         holder.songCountTextView.setText(artistItem.getFormattedSongCount());
         holder.durationTextView.setText(formatDuration(artistItem.getTotalDuration()));
 
-
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onArtistItemClick(artistItem);
-            }
+            if (listener != null) listener.onArtistItemClick(artistItem);
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (listener != null) listener.onPinClick(artistItem);
+            return true;
         });
 
         holder.playButton.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onPlayButtonClick(artistItem);
-            }
+            if (listener != null) listener.onPlayButtonClick(artistItem);
         });
     }
 
@@ -73,20 +74,14 @@ public class ArtistAdapter extends RecyclerView.Adapter<ArtistAdapter.ArtistView
 
     private String formatDuration(long durationMs) {
         if (durationMs <= 0) return "0m";
-
         long totalMinutes = durationMs / (1000 * 60);
-
         if (totalMinutes < 60) {
             return totalMinutes + "m";
         } else {
             long hours = totalMinutes / 60;
             long minutes = totalMinutes % 60;
-
-            if (minutes == 0) {
-                return hours + "h";
-            } else {
-                return String.format(Locale.getDefault(), "%dh %dm", hours, minutes);
-            }
+            if (minutes == 0) return hours + "h";
+            return String.format(Locale.getDefault(), "%dh %dm", hours, minutes);
         }
     }
 

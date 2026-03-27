@@ -189,7 +189,7 @@ public class CollectionManager {
     /**
      * Save collections to SharedPreferences
      */
-    private void saveCollections(List<Collection> collections) {
+    public void saveCollections(List<Collection> collections) {
         String json = gson.toJson(collections);
         preferences.edit().putString(KEY_COLLECTIONS, json).apply();
     }

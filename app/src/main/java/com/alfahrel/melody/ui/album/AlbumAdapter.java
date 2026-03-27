@@ -27,6 +27,7 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
     public interface OnAlbumItemClickListener {
         void onAlbumItemClick(AlbumItem albumItem);
         void onPlayButtonClick(AlbumItem albumItem);
+        void onPinClick(AlbumItem albumItem);
     }
 
     public AlbumAdapter(List<AlbumItem> albumList, Context context) {
@@ -63,15 +64,16 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
                 .into(holder.albumArtImageView);
 
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onAlbumItemClick(albumItem);
-            }
+            if (listener != null) listener.onAlbumItemClick(albumItem);
+        });
+
+        holder.itemView.setOnLongClickListener(v -> {
+            if (listener != null) listener.onPinClick(albumItem);
+            return true;
         });
 
         holder.playButton.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onPlayButtonClick(albumItem);
-            }
+            if (listener != null) listener.onPlayButtonClick(albumItem);
         });
     }
 

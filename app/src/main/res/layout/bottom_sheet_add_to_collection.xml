@@ -4,42 +4,52 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="?attr/colorSurface"
-    android:paddingTop="16dp">
+    android:background="?attr/colorSurface">
 
-    <LinearLayout
+    <!-- Drag handle -->
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bottom_sheet_handle" />
+
+    <!-- Title -->
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="12dp"
+        android:text="Add to Collection"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textColor="?attr/colorOnSurface" />
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="16dp"
-            android:text="Add to Collection"
-            android:textAppearance="?attr/textAppearanceTitleLarge"
-            android:textColor="?attr/colorOnSurface" />
-
-    </LinearLayout>
-
-    <com.google.android.material.divider.MaterialDivider
+    <!-- Divider -->
+    <View
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp" />
+        android:layout_height="1dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="?attr/colorOutlineVariant"
+        android:alpha="0.5" />
 
+    <!-- Collections list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/collectionsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:maxHeight="400dp"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
         android:clipToPadding="false"
         android:scrollbars="vertical" />
 
+    <!-- Empty state -->
     <LinearLayout
+        android:id="@+id/emptyCollectionsLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -47,34 +57,113 @@
         android:padding="32dp"
         android:visibility="gone">
 
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_outline_music_note_24"
+            android:layout_marginBottom="12dp"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No collections yet"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:layout_marginBottom="4dp" />
+
         <TextView
             android:id="@+id/emptyCollectionsText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No collections yet"
-            android:textAppearance="?attr/textAppearanceBodyLarge"
-            android:textColor="?attr/colorOnSurface"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
             android:text="Create your first collection below"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textAlignment="center" />
+            android:textAlignment="center"
+            android:gravity="center" />
 
     </LinearLayout>
 
-    <com.google.android.material.button.MaterialButton
+    <!-- Divider above button -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:background="?attr/colorOutlineVariant"
+        android:alpha="0.5" />
+
+    <!-- Create new collection button -->
+    <LinearLayout
         android:id="@+id/createNewCollectionButton"
-        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="Create New Collection"
-        android:textAllCaps="false"
-        app:iconGravity="textStart" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true">
+
+        <!-- + icon box -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHighest"
+            android:layout_marginEnd="16dp"
+            android:clickable="false"
+            android:focusable="false">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_outline_library_add_24"
+                app:tint="?attr/colorOnSurfaceVariant"
+                android:contentDescription="Create new collection"
+                android:clickable="false"
+                android:focusable="false" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:clickable="false"
+            android:focusable="false">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="New Collection"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnSurface"
+                android:maxLines="1" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Create a new collection"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:maxLines="1" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Nav bar spacing -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="16dp" />
 
 </LinearLayout>

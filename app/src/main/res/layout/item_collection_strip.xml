@@ -2,52 +2,48 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/collectionCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="2dp"
-    android:layout_marginVertical="1dp"
-    app:cardCornerRadius="16dp"
+    android:layout_marginVertical="2dp"
+    app:cardCornerRadius="14dp"
     app:cardBackgroundColor="?attr/colorSurfaceContainer"
     app:cardElevation="0dp"
     app:strokeWidth="0dp"
     android:clickable="true"
-    android:focusable="true"
-    android:longClickable="true">
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="10dp">
+        android:padding="8dp"
+        android:gravity="center_vertical">
 
-        <!-- Thumbnail -->
+        <!-- Cover thumbnail -->
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            app:cardCornerRadius="12dp"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            app:cardCornerRadius="10dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp"
-            android:layout_marginEnd="12dp"
             android:clickable="false"
             android:focusable="false">
 
             <ImageView
-                android:id="@+id/imageCoverThumb"
+                android:id="@+id/stripCollectionCover"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:background="?attr/colorSurfaceContainerHighest"
-                android:contentDescription="Collection cover"
                 android:clickable="false"
-                android:focusable="false" />
+                android:focusable="false"
+                android:contentDescription="Collection cover" />
 
             <LinearLayout
-                android:id="@+id/coverPlaceholder"
+                android:id="@+id/stripCoverPlaceholder"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
                 android:gravity="center"
                 android:background="?attr/colorSurfaceContainerHighest"
                 android:visibility="visible"
@@ -55,11 +51,10 @@
                 android:focusable="false">
 
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:src="@drawable/ic_outline_music_note_24"
                     app:tint="?attr/colorOnSurfaceVariant"
-                    android:contentDescription="No cover"
                     android:clickable="false"
                     android:focusable="false" />
 
@@ -67,52 +62,37 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Name + song count -->
+        <!-- Name + count -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:clickable="false"
-            android:focusable="false">
+            android:layout_marginStart="12dp">
 
             <TextView
-                android:id="@+id/textCollectionName"
+                android:id="@+id/stripCollectionName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Collection Name"
-                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSurface"
                 android:maxLines="1"
                 android:ellipsize="end"
-                android:layout_marginBottom="2dp"
                 android:clickable="false"
                 android:focusable="false" />
 
             <TextView
-                android:id="@+id/textSongCount"
+                android:id="@+id/stripCollectionCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="0 songs"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:maxLines="1"
                 android:clickable="false"
                 android:focusable="false" />
 
         </LinearLayout>
-
-        <!-- ⋮ vertical menu button -->
-        <ImageButton
-            android:id="@+id/btnCollectionMenu"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_baseline_more_vert_24"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="?attr/colorOnSurfaceVariant"
-            android:contentDescription="More options"
-            android:clickable="true"
-            android:focusable="true" />
 
     </LinearLayout>
 

@@ -10,6 +10,7 @@ public class AlbumItem implements Parcelable {
     private String artistName;
     private Uri albumArtUri;
     private int songCount;
+    private boolean pinned;
 
     public AlbumItem(long albumId, String albumName, String artistName, Uri albumArtUri, int songCount) {
         this.albumId = albumId;
@@ -17,6 +18,7 @@ public class AlbumItem implements Parcelable {
         this.artistName = artistName != null ? artistName : "Unknown Artist";
         this.albumArtUri = albumArtUri;
         this.songCount = songCount;
+        this.pinned = false;
     }
 
     protected AlbumItem(Parcel in) {
@@ -25,6 +27,7 @@ public class AlbumItem implements Parcelable {
         artistName = in.readString();
         albumArtUri = in.readParcelable(Uri.class.getClassLoader());
         songCount = in.readInt();
+        pinned = in.readByte() != 0;
     }
 
     public static final Creator<AlbumItem> CREATOR = new Creator<AlbumItem>() {
@@ -51,6 +54,7 @@ public class AlbumItem implements Parcelable {
         dest.writeString(artistName);
         dest.writeParcelable(albumArtUri, flags);
         dest.writeInt(songCount);
+        dest.writeByte((byte) (pinned ? 1 : 0));
     }
 
     public long getAlbumId() { return albumId; }
@@ -58,12 +62,14 @@ public class AlbumItem implements Parcelable {
     public String getArtistName() { return artistName; }
     public Uri getAlbumArtUri() { return albumArtUri; }
     public int getSongCount() { return songCount; }
+    public boolean isPinned() { return pinned; }
 
     public void setAlbumId(long albumId) { this.albumId = albumId; }
     public void setAlbumName(String albumName) { this.albumName = albumName; }
     public void setArtistName(String artistName) { this.artistName = artistName; }
     public void setAlbumArtUri(Uri albumArtUri) { this.albumArtUri = albumArtUri; }
     public void setSongCount(int songCount) { this.songCount = songCount; }
+    public void setPinned(boolean pinned) { this.pinned = pinned; }
 
     public String getFormattedSongCount() {
         return songCount == 1 ? songCount + " song" : songCount + " songs";

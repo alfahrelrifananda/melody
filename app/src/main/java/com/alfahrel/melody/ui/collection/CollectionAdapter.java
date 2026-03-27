@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -14,11 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.alfahrel.melody.R;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.imageview.ShapeableImageView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,17 +67,9 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         this.longClickListener = longClickListener;
     }
 
-    public void setOnCollectionClickListener(OnCollectionClickListener listener) {
-        this.clickListener = listener;
-    }
-
-    public void setOnCollectionLongClickListener(OnCollectionLongClickListener listener) {
-        this.longClickListener = listener;
-    }
-
-    public void setOnAddCollectionClickListener(OnAddCollectionClickListener listener) {
-        this.addClickListener = listener;
-    }
+    public void setOnCollectionClickListener(OnCollectionClickListener l)    { this.clickListener = l; }
+    public void setOnCollectionLongClickListener(OnCollectionLongClickListener l) { this.longClickListener = l; }
+    public void setOnAddCollectionClickListener(OnAddCollectionClickListener l)   { this.addClickListener = l; }
 
     @Override
     public int getItemViewType(int position) {
@@ -90,15 +80,14 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (context == null) context = parent.getContext();
-
         if (viewType == VIEW_TYPE_COLLECTION) {
-            View view = LayoutInflater.from(parent.getContext())
+            View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_collection, parent, false);
-            return new CollectionViewHolder(view);
+            return new CollectionViewHolder(v);
         } else {
-            View view = LayoutInflater.from(parent.getContext())
+            View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_add_collection, parent, false);
-            return new AddButtonViewHolder(view);
+            return new AddButtonViewHolder(v);
         }
     }
 
@@ -121,86 +110,65 @@ public class CollectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
         notifyDataSetChanged();
     }
 
-    // ─── CollectionViewHolder ────────────────────────────────────────────────
-
     class CollectionViewHolder extends RecyclerView.ViewHolder {
         private final MaterialCardView cardView;
         private final TextView textName;
         private final TextView textSongCount;
-        private final ShapeableImageView imageCoverThumb; // NEW
+        private final ImageView imageCoverThumb;
+        private final View coverPlaceholder;
+        private final ImageButton btnMenu;
 
-        public CollectionViewHolder(@NonNull View itemView) {
+        CollectionViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardView       = itemView.findViewById(R.id.collectionCard);
-            textName       = itemView.findViewById(R.id.textCollectionName);
-            textSongCount  = itemView.findViewById(R.id.textSongCount);
-            imageCoverThumb = itemView.findViewById(R.id.imageCoverThumb); // NEW
+            cardView         = itemView.findViewById(R.id.collectionCard);
+            textName         = itemView.findViewById(R.id.textCollectionName);
+            textSongCount    = itemView.findViewById(R.id.textSongCount);
+            imageCoverThumb  = itemView.findViewById(R.id.imageCoverThumb);
+            coverPlaceholder = itemView.findViewById(R.id.coverPlaceholder);
+            btnMenu          = itemView.findViewById(R.id.btnCollectionMenu); // 👈 add this
         }
 
-        public void bind(Collection collection) {
+        void bind(Collection collection) {
             textName.setText(collection.getName());
 
             int count = collection.getMusicIds() != null ? collection.getMusicIds().size() : 0;
             textSongCount.setText(count + (count == 1 ? " song" : " songs"));
 
-            // NEW: load cover image with Glide, fall back to music note icon
-            if (imageCoverThumb != null) {
-                String uri = collection.getCoverImageUri();
-                if (uri != null && !uri.isEmpty()) {
-                    imageCoverThumb.setPadding(0, 0, 0, 0);
-                    imageCoverThumb.clearColorFilter();
-                    Glide.with(imageCoverThumb.getContext())
-                            .load(Uri.parse(uri))
-                            .apply(new RequestOptions().centerCrop())
-                            .placeholder(R.drawable.ic_music_note_24)
-                            .error(R.drawable.ic_music_note_24)
-                            .into(imageCoverThumb);
-                } else {
-                    // Reset to placeholder state
-                    int padding = (int) (12 * itemView.getContext().getResources().getDisplayMetrics().density);
-                    imageCoverThumb.setPadding(padding, padding, padding, padding);
-                    Glide.with(imageCoverThumb.getContext()).clear(imageCoverThumb);
-                    imageCoverThumb.setImageResource(R.drawable.ic_music_note_24);
-                    imageCoverThumb.setColorFilter(
-                            androidx.core.content.ContextCompat.getColor(
-                                    itemView.getContext(),
-                                    com.google.android.material.R.color.material_on_surface_emphasis_medium
-                            )
-                    );
-                }
+            String uri = collection.getCoverImageUri();
+            if (uri != null && !uri.isEmpty()) {
+                imageCoverThumb.setVisibility(View.VISIBLE);
+                if (coverPlaceholder != null) coverPlaceholder.setVisibility(View.GONE);
+                Glide.with(itemView.getContext())
+                        .load(Uri.parse(uri))
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_outline_music_note_24)
+                        .error(R.drawable.ic_outline_music_note_24)
+                        .into(imageCoverThumb);
+            } else {
+                imageCoverThumb.setVisibility(View.INVISIBLE);
+                Glide.with(itemView.getContext()).clear(imageCoverThumb);
+                if (coverPlaceholder != null) coverPlaceholder.setVisibility(View.VISIBLE);
             }
 
             cardView.setOnClickListener(v -> {
-                if (clickListener != null) {
-                    clickListener.onCollectionClick(collection);
-                } else if (context != null) {
-                    Intent intent = new Intent(context, CollectionDetailActivity.class);
-                    intent.putExtra("collection", collection);
-                    context.startActivity(intent);
-                }
+                if (clickListener != null) clickListener.onCollectionClick(collection);
             });
 
-            cardView.setOnLongClickListener(v -> {
-                if (longClickListener != null) {
-                    longClickListener.onCollectionLongClick(collection);
-                    return true;
-                }
-                return false;
+            btnMenu.setOnClickListener(v -> {
+                if (longClickListener != null) longClickListener.onCollectionLongClick(collection);
             });
         }
     }
 
-    // ─── AddButtonViewHolder ─────────────────────────────────────────────────
-
     class AddButtonViewHolder extends RecyclerView.ViewHolder {
         private final MaterialButton addButton;
 
-        public AddButtonViewHolder(@NonNull View itemView) {
+        AddButtonViewHolder(@NonNull View itemView) {
             super(itemView);
             addButton = itemView.findViewById(R.id.btnAddCollection);
         }
 
-        public void bind() {
+        void bind() {
             addButton.setOnClickListener(v -> {
                 if (addClickListener != null) addClickListener.onAddCollectionClick();
             });

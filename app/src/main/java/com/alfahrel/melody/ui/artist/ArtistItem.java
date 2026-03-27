@@ -9,12 +9,14 @@ public class ArtistItem implements Parcelable {
     private Uri artistImageUri;
     private int songCount;
     private long totalDuration;
+    private boolean pinned;
 
     public ArtistItem(String artistName, Uri artistImageUri, int songCount) {
         this.artistName = artistName != null ? artistName : "Unknown Artist";
         this.artistImageUri = artistImageUri;
         this.songCount = songCount;
         this.totalDuration = 0;
+        this.pinned = false;
     }
 
     public ArtistItem(String artistName, Uri artistImageUri, int songCount, long totalDuration) {
@@ -22,6 +24,7 @@ public class ArtistItem implements Parcelable {
         this.artistImageUri = artistImageUri;
         this.songCount = songCount;
         this.totalDuration = totalDuration;
+        this.pinned = false;
     }
 
     protected ArtistItem(Parcel in) {
@@ -29,6 +32,7 @@ public class ArtistItem implements Parcelable {
         artistImageUri = in.readParcelable(Uri.class.getClassLoader());
         songCount = in.readInt();
         totalDuration = in.readLong();
+        pinned = in.readByte() != 0;
     }
 
     public static final Creator<ArtistItem> CREATOR = new Creator<ArtistItem>() {
@@ -54,17 +58,20 @@ public class ArtistItem implements Parcelable {
         dest.writeParcelable(artistImageUri, flags);
         dest.writeInt(songCount);
         dest.writeLong(totalDuration);
+        dest.writeByte((byte) (pinned ? 1 : 0));
     }
 
     public String getArtistName() { return artistName; }
     public Uri getArtistImageUri() { return artistImageUri; }
     public int getSongCount() { return songCount; }
     public long getTotalDuration() { return totalDuration; }
+    public boolean isPinned() { return pinned; }
 
     public void setArtistName(String artistName) { this.artistName = artistName; }
     public void setArtistImageUri(Uri artistImageUri) { this.artistImageUri = artistImageUri; }
     public void setSongCount(int songCount) { this.songCount = songCount; }
     public void setTotalDuration(long totalDuration) { this.totalDuration = totalDuration; }
+    public void setPinned(boolean pinned) { this.pinned = pinned; }
 
     public void addDuration(long duration) {
         this.totalDuration += duration;

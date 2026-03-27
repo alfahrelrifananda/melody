@@ -184,7 +184,7 @@
         android:layout_marginEnd="24dp"
         android:layout_marginTop="8dp"
         app:cardCornerRadius="16dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="54dp"
         app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
         android:visibility="gone"
         app:strokeWidth="2dp"

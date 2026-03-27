@@ -1,15 +1,20 @@
 package com.alfahrel.melody.ui.pages.nowplaying;
 
-
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.alfahrel.melody.R;
 import com.alfahrel.melody.ui.collection.Collection;
 import com.alfahrel.melody.ui.collection.CollectionManager;
+import com.bumptech.glide.Glide;
+import com.google.android.material.card.MaterialCardView;
 
 import java.util.List;
 
@@ -33,17 +38,17 @@ public class AddToCollectionAdapter extends RecyclerView.Adapter<AddToCollection
         this.clickListener = clickListener;
     }
 
+    @NonNull
     @Override
-    public CollectionViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public CollectionViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_collection_select, parent, false);
+                .inflate(R.layout.item_collection_picker, parent, false);
         return new CollectionViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(CollectionViewHolder holder, int position) {
-        Collection collection = collections.get(position);
-        holder.bind(collection);
+    public void onBindViewHolder(@NonNull CollectionViewHolder holder, int position) {
+        holder.bind(collections.get(position));
     }
 
     @Override
@@ -53,38 +58,51 @@ public class AddToCollectionAdapter extends RecyclerView.Adapter<AddToCollection
 
     class CollectionViewHolder extends RecyclerView.ViewHolder {
 
-        private android.widget.ImageView collectionIcon;
-        private android.widget.TextView collectionName;
-        private android.widget.TextView songCount;
-        private android.widget.ImageView checkIcon;
-        private com.google.android.material.card.MaterialCardView cardView;
+        private final ImageView cover;
+        private final View      coverPlaceholder;
+        private final TextView  collectionName;
+        private final TextView  songCount;
+        private final ImageView checkIcon;
 
-        public CollectionViewHolder(View itemView) {
+        CollectionViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardView = itemView.findViewById(R.id.collectionSelectCard);
-            collectionIcon = itemView.findViewById(R.id.collectionIcon);
-            collectionName = itemView.findViewById(R.id.collectionName);
-            songCount = itemView.findViewById(R.id.songCount);
-            checkIcon = itemView.findViewById(R.id.checkIcon);
+            cover            = itemView.findViewById(R.id.itemCollectionCover);
+            coverPlaceholder = itemView.findViewById(R.id.itemCoverPlaceholder);
+            collectionName   = itemView.findViewById(R.id.itemCollectionName);
+            songCount        = itemView.findViewById(R.id.itemCollectionSongCount);
+            checkIcon        = itemView.findViewById(R.id.itemCollectionCheck);
         }
 
         void bind(Collection collection) {
             collectionName.setText(collection.getName());
-            int count = collection.getSongCount();
+
+            int count = collection.getMusicIds() != null
+                    ? collection.getMusicIds().size() : 0;
             songCount.setText(count + (count == 1 ? " song" : " songs"));
+
+            // Cover image
+            String uri = collection.getCoverImageUri();
+            if (uri != null && !uri.isEmpty()) {
+                cover.setVisibility(View.VISIBLE);
+                coverPlaceholder.setVisibility(View.GONE);
+                Glide.with(itemView.getContext())
+                        .load(Uri.parse(uri))
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_outline_music_note_24)
+                        .into(cover);
+            } else {
+                cover.setVisibility(View.GONE);
+                coverPlaceholder.setVisibility(View.VISIBLE);
+                Glide.with(itemView.getContext()).clear(cover);
+            }
 
             boolean isInCollection = collectionManager.isSongInCollection(
                     collection.getId(), currentSongId);
 
-            if (isInCollection) {
-                checkIcon.setVisibility(View.VISIBLE);
-                cardView.setAlpha(0.6f);
-            } else {
-                checkIcon.setVisibility(View.GONE);
-                cardView.setAlpha(1.0f);
-            }
+            checkIcon.setVisibility(isInCollection ? View.VISIBLE : View.GONE);
+            itemView.setAlpha(isInCollection ? 0.5f : 1.0f);
 
-            cardView.setOnClickListener(v -> {
+            itemView.setOnClickListener(v -> {
                 if (!isInCollection && clickListener != null) {
                     clickListener.onCollectionClick(collection);
                 }

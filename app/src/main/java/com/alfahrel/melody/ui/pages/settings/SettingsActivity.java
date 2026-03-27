@@ -1,16 +1,19 @@
 package com.alfahrel.melody.ui.pages.settings;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.slider.Slider;
 
 import com.alfahrel.melody.R;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -18,7 +21,6 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Edge-to-edge – matches MainActivity
         getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             getWindow().setNavigationBarContrastEnforced(false);
@@ -28,7 +30,7 @@ public class SettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_settings);
 
         setupToolbar();
-        setupPlaceholderClicks();
+        setupClicks();
     }
 
     private void setupToolbar() {
@@ -36,7 +38,6 @@ public class SettingsActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
     }
 
@@ -44,21 +45,22 @@ public class SettingsActivity extends AppCompatActivity {
     public boolean onSupportNavigateUp() {
         finish();
         return true;
-
     }
 
-    private void setupPlaceholderClicks() {
-        int[] clickableIds = {
-                R.id.setting_theme,
-                R.id.setting_sort_order,
-                R.id.setting_scan_folders,
-                R.id.setting_changelog,
-                R.id.setting_licenses,
-                R.id.setting_github
-        };
-        for (int id : clickableIds) {
-            View v = findViewById(id);
-            if (v != null) v.setOnClickListener(view -> { /* TODO */ });
+    private void setupClicks() {
+        Map<Integer, String> links = new LinkedHashMap<>();
+        links.put(R.id.setting_changelog, "https://github.com/alfahrelrifananda/melody/releases");
+        links.put(R.id.setting_licenses, "https://github.com/alfahrelrifananda/melody/blob/main/LICENSES.md");
+        links.put(R.id.setting_github,   "https://github.com/alfahrelrifananda/melody");
+
+        for (Map.Entry<Integer, String> entry : links.entrySet()) {
+            View v = findViewById(entry.getKey());
+            if (v != null) {
+                v.setOnClickListener(view -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(entry.getValue()));
+                    startActivity(intent);
+                });
+            }
         }
     }
 }

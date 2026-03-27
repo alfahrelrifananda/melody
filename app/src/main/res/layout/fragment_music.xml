@@ -7,60 +7,12 @@
     android:orientation="vertical"
     android:background="?attr/colorSurfaceContainerHigh"
     tools:context=".ui.music.MusicFragment">
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:paddingHorizontal="24dp"
-        android:paddingVertical="8dp">
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/filterChipGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:singleSelection="true"
-            app:selectionRequired="false">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipRecentlyAdded"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Recently Added" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipMostPlayed"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Most Played" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAZ"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="A-Z" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipZA"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Z-A" />
-
-        </com.google.android.material.chip.ChipGroup>
-
-    </HorizontalScrollView>
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/music_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="0dp"
         android:paddingBottom="200dp"
         tools:listitem="@layout/item_music" />
 

@@ -15,7 +15,7 @@
         android:layout_marginBottom="8dp"
         android:background="@drawable/bottom_sheet_handle" />
 
-    <!-- Song header -->
+    <!-- Collection header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -33,12 +33,31 @@
             app:cardBackgroundColor="?attr/colorSurfaceVariant"
             app:strokeWidth="0dp"
             app:cardElevation="0dp">
+
             <ImageView
-                android:id="@+id/optionsAlbumArt"
+                android:id="@+id/optionsCollectionCover"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_outline_music_note_24" />
+
+            <!-- Placeholder shown when no cover -->
+            <LinearLayout
+                android:id="@+id/optionsCoverPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:background="?attr/colorSurfaceVariant"
+                android:visibility="visible"
+                android:clickable="false"
+                android:focusable="false">
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_outline_music_note_24"
+                    app:tint="?attr/colorOnSurfaceVariant" />
+            </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
@@ -47,26 +66,29 @@
             android:layout_weight="1"
             android:layout_marginStart="14dp"
             android:orientation="vertical">
+
             <TextView
-                android:id="@+id/optionsSongTitle"
+                android:id="@+id/optionsCollectionName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Song Title"
+                android:text="Collection Name"
                 android:textSize="15sp"
                 android:textFontWeight="600"
                 android:textColor="?attr/colorOnSurface"
                 android:maxLines="1"
                 android:ellipsize="end" />
+
             <TextView
-                android:id="@+id/optionsArtistName"
+                android:id="@+id/optionsSongCount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Artist Name"
+                android:text="0 songs"
                 android:textSize="13sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="2dp"
                 android:maxLines="1"
                 android:ellipsize="end" />
+
         </LinearLayout>
 
     </LinearLayout>
@@ -88,8 +110,10 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
 
-        <!-- Add to collection -->
-        <LinearLayout android:id="@+id/optionAddToCollection" style="@style/SongOptionRow">
+        <LinearLayout
+            android:id="@+id/optionEditCollection"
+            style="@style/SongOptionRow">
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="36dp"
                 android:layout_height="36dp"
@@ -100,14 +124,21 @@
                 app:cardElevation="0dp">
                 <ImageView
                     style="@style/SongOptionIcon"
-                    android:src="@drawable/ic_outline_library_add_24"
+                    android:src="@drawable/ic_baseline_edit_24"
                     android:tint="?attr/colorOnSecondaryContainer" />
             </com.google.android.material.card.MaterialCardView>
-            <TextView style="@style/SongOptionLabel" android:text="Add to collection" />
+
+            <TextView
+                style="@style/SongOptionLabel"
+                android:text="Edit collection" />
+
         </LinearLayout>
 
-        <!-- View details -->
-        <LinearLayout android:id="@+id/optionViewDetails" style="@style/SongOptionRow">
+        <!-- Pin -->
+        <LinearLayout
+            android:id="@+id/optionPinCollection"
+            style="@style/SongOptionRow">
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="36dp"
                 android:layout_height="36dp"
@@ -116,33 +147,21 @@
                 app:cardBackgroundColor="?attr/colorSecondaryContainer"
                 app:strokeWidth="0dp"
                 app:cardElevation="0dp">
-                <ImageView
-                    style="@style/SongOptionIcon"
-                    android:src="@drawable/ic_outline_info_24"
-                    android:tint="?attr/colorOnSecondaryContainer" />
-            </com.google.android.material.card.MaterialCardView>
-            <TextView style="@style/SongOptionLabel" android:text="View details" />
-        </LinearLayout>
 
-        <!-- Pin to Home -->
-        <LinearLayout android:id="@+id/optionPinSong" style="@style/SongOptionRow">
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="16dp"
-                app:cardCornerRadius="10dp"
-                app:cardBackgroundColor="?attr/colorSecondaryContainer"
-                app:strokeWidth="0dp"
-                app:cardElevation="0dp">
                 <ImageView
+                    android:id="@+id/optionPinIcon"
                     style="@style/SongOptionIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:src="@drawable/ic_baseline_push_pin_24"
                     android:tint="?attr/colorOnSecondaryContainer" />
             </com.google.android.material.card.MaterialCardView>
+
             <TextView
                 android:id="@+id/optionPinLabel"
                 style="@style/SongOptionLabel"
                 android:text="Pin to Home" />
+
         </LinearLayout>
 
         <!-- Divider before destructive -->
@@ -157,7 +176,10 @@
             android:alpha="0.5" />
 
         <!-- Delete -->
-        <LinearLayout android:id="@+id/optionDelete" style="@style/SongOptionRow">
+        <LinearLayout
+            android:id="@+id/optionDeleteCollection"
+            style="@style/SongOptionRow">
+
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="36dp"
                 android:layout_height="36dp"
@@ -171,10 +193,12 @@
                     android:src="@drawable/ic_outline_delete_24"
                     android:tint="?attr/colorOnErrorContainer" />
             </com.google.android.material.card.MaterialCardView>
+
             <TextView
                 style="@style/SongOptionLabel"
                 android:text="Delete"
                 android:textColor="?attr/colorError" />
+
         </LinearLayout>
 
     </LinearLayout>

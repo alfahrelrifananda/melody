@@ -12,6 +12,7 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -35,6 +36,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.alfahrel.melody.utils.GsonHelper;
 import com.alfahrel.melody.utils.SongDetailBottomSheet;
 import com.alfahrel.melody.utils.SongOptionsBottomSheet;
 import com.bumptech.glide.Glide;
@@ -44,6 +46,8 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import com.alfahrel.melody.R;
 import com.alfahrel.melody.ui.music.MusicAdapter;
@@ -55,8 +59,11 @@ import com.alfahrel.melody.ui.collection.CollectionManager;
 import com.alfahrel.melody.service.MusicService;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,7 +71,12 @@ import java.util.concurrent.Executors;
 public class ArtistDetailActivity extends AppCompatActivity {
 
     private static final String TAG = "ArtistDetailActivity";
-    private static final int REQUEST_CODE_DELETE_PERMISSION = 1001;
+
+    // ── Song pin persistence (mirrors MusicFragment) ──────────────────────────
+    private static final String SONG_PREFS_NAME = "SongsPrefs";
+    private static final String KEY_SONGS       = "songs_full";
+    private Gson gson;
+    private SharedPreferences songPrefs;
 
     private MaterialToolbar toolbar;
     private TextView artistNameTextView;
@@ -102,10 +114,7 @@ public class ArtistDetailActivity extends AppCompatActivity {
     private BroadcastReceiver musicUpdateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (isActivityDestroyed || isFinishing() || isDestroyed()) {
-                return;
-            }
-
+            if (isActivityDestroyed || isFinishing() || isDestroyed()) return;
             try {
                 String action = intent.getAction();
                 if (action != null) {
@@ -119,16 +128,15 @@ public class ArtistDetailActivity extends AppCompatActivity {
                             }
                             break;
                         case MusicService.ACTION_PLAYBACK_STATE_CHANGED:
-                            boolean playingState = intent.getBooleanExtra("is_playing", false);
-                            updateMiniPlayerState(playingState);
+                            updateMiniPlayerState(intent.getBooleanExtra("is_playing", false));
                             break;
                         case MusicService.ACTION_HIDE_MINI_PLAYER:
                             hideMiniPlayer();
                             break;
                         case "MINI_PLAYER_VISIBILITY_CHANGED":
-                            boolean isVisible = intent.getBooleanExtra("is_visible", false);
-                            int height = intent.getIntExtra("height", 0);
-                            adjustRecyclerViewPadding(isVisible, height);
+                            adjustRecyclerViewPadding(
+                                    intent.getBooleanExtra("is_visible", false),
+                                    intent.getIntExtra("height", 0));
                             break;
                     }
                 }
@@ -137,6 +145,8 @@ public class ArtistDetailActivity extends AppCompatActivity {
             }
         }
     };
+
+    // ── Delete permission launcher ────────────────────────────────────────────
 
     private void setupDeletePermissionLauncher() {
         deletePermissionLauncher = registerForActivityResult(
@@ -148,14 +158,13 @@ public class ArtistDetailActivity extends AppCompatActivity {
                             pendingDeleteItem = null;
                         }
                     } else {
-                        Toast.makeText(this,
-                                "Permission denied to delete file",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Permission denied to delete file", Toast.LENGTH_SHORT).show();
                         pendingDeleteItem = null;
                     }
-                }
-        );
+                });
     }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -163,33 +172,20 @@ public class ArtistDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_artist_detail);
 
         try {
-            executorService = Executors.newSingleThreadExecutor();
+            executorService   = Executors.newSingleThreadExecutor();
             collectionManager = new CollectionManager(this);
+            gson              = GsonHelper.get();
+            songPrefs         = getSharedPreferences(SONG_PREFS_NAME, Context.MODE_PRIVATE);
 
-            if (!getArtistDataFromIntent()) {
-                finish();
-                return;
-            }
-
-            if (!initializeViews()) {
-                Log.e(TAG, "Failed to initialize views");
-                finish();
-                return;
-            }
-
-            if (!initializeMiniPlayer()) {
-                Log.e(TAG, "Failed to initialize mini player");
-                finish();
-                return;
-            }
+            if (!getArtistDataFromIntent()) { finish(); return; }
+            if (!initializeViews())         { finish(); return; }
+            if (!initializeMiniPlayer())    { finish(); return; }
 
             setupToolbar();
             setupArtistHeader();
             setupRecyclerView();
             setupShuffleButton();
-
             loadArtistSongs();
-
             setupDeletePermissionLauncher();
             registerMusicUpdateReceiver();
 
@@ -198,6 +194,61 @@ public class ArtistDetailActivity extends AppCompatActivity {
             finish();
         }
     }
+
+    // ── Song pin ──────────────────────────────────────────────────────────────
+
+    private void toggleSongPin(MusicItem song) {
+        executorService.execute(() -> {
+            boolean nowPinned = false;
+            for (MusicItem s : artistSongs) {
+                if (s.getId() == song.getId()) {
+                    nowPinned = !s.isPinned();
+                    s.setPinned(nowPinned);
+                    break;
+                }
+            }
+            saveSongPinnedState();
+            final boolean pinned = nowPinned;
+            runOnUiThread(() -> {
+                if (musicAdapter != null) musicAdapter.notifyDataSetChanged();
+                Toast.makeText(this,
+                        pinned ? "Pinned to Home" : "Unpinned from Home",
+                        Toast.LENGTH_SHORT).show();
+            });
+        });
+    }
+
+    private void saveSongPinnedState() {
+        String json = songPrefs.getString(KEY_SONGS, null);
+        List<MusicItem> all = new ArrayList<>();
+        if (json != null) {
+            Type type = new TypeToken<List<MusicItem>>(){}.getType();
+            List<MusicItem> saved = gson.fromJson(json, type);
+            if (saved != null) all = saved;
+        }
+        Map<Long, Boolean> pinMap = new HashMap<>();
+        for (MusicItem s : artistSongs) pinMap.put(s.getId(), s.isPinned());
+        for (MusicItem s : all) {
+            if (pinMap.containsKey(s.getId())) s.setPinned(pinMap.get(s.getId()));
+        }
+        songPrefs.edit().putString(KEY_SONGS, gson.toJson(all)).apply();
+    }
+
+    private void restoreSongPinnedState(List<MusicItem> list) {
+        String json = songPrefs.getString(KEY_SONGS, null);
+        if (json == null) return;
+        Type type = new TypeToken<List<MusicItem>>(){}.getType();
+        List<MusicItem> saved = gson.fromJson(json, type);
+        if (saved == null) return;
+        Map<Long, Boolean> pinMap = new HashMap<>();
+        for (MusicItem s : saved) pinMap.put(s.getId(), s.isPinned());
+        for (MusicItem s : list) {
+            Boolean pinned = pinMap.get(s.getId());
+            if (pinned != null) s.setPinned(pinned);
+        }
+    }
+
+    // ── Init helpers ──────────────────────────────────────────────────────────
 
     private boolean getArtistDataFromIntent() {
         artistItem = getIntent().getParcelableExtra("artist_item");
@@ -210,13 +261,13 @@ public class ArtistDetailActivity extends AppCompatActivity {
 
     private boolean initializeViews() {
         try {
-            toolbar = findViewById(R.id.toolbar);
-            artistNameTextView = findViewById(R.id.artistNameTextView);
-            songCountTextView = findViewById(R.id.songCountTextView);
-            songsRecyclerView = findViewById(R.id.songsRecyclerView);
-            loadingLayout = findViewById(R.id.loadingLayout);
-            emptyState = findViewById(R.id.emptyState);
-            shuffleArtistButton = findViewById(R.id.shuffleArtistButton);
+            toolbar               = findViewById(R.id.toolbar);
+            artistNameTextView    = findViewById(R.id.artistNameTextView);
+            songCountTextView     = findViewById(R.id.songCountTextView);
+            songsRecyclerView     = findViewById(R.id.songsRecyclerView);
+            loadingLayout         = findViewById(R.id.loadingLayout);
+            emptyState            = findViewById(R.id.emptyState);
+            shuffleArtistButton   = findViewById(R.id.shuffleArtistButton);
             totalDurationTextView = findViewById(R.id.totalDurationTextView);
 
             if (toolbar == null || artistNameTextView == null ||
@@ -225,7 +276,6 @@ public class ArtistDetailActivity extends AppCompatActivity {
                 Log.e(TAG, "One or more artist views are null");
                 return false;
             }
-
             return true;
         } catch (Exception e) {
             Log.e(TAG, "Error initializing views: " + e.getMessage(), e);
@@ -233,18 +283,24 @@ public class ArtistDetailActivity extends AppCompatActivity {
         }
     }
 
-    private String formatTotalDuration(long totalMilliseconds) {
-        long totalSeconds = totalMilliseconds / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
+    private void setupToolbar() {
+        try {
+            setSupportActionBar(toolbar);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setDisplayShowHomeEnabled(true);
+                getSupportActionBar().setTitle("");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up toolbar", e);
+        }
+    }
 
-        if (hours > 0) {
-            return String.format("%dh %dm", hours, minutes);
-        } else if (minutes > 0) {
-            return String.format("%dm %ds", minutes, seconds);
-        } else {
-            return String.format("%ds", seconds);
+    private void setupArtistHeader() {
+        try {
+            artistNameTextView.setText(artistItem.getArtistName());
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting up artist header", e);
         }
     }
 
@@ -254,9 +310,7 @@ public class ArtistDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "No songs to shuffle", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            Random random = new Random();
-            int randomIndex = random.nextInt(artistSongs.size());
+            int randomIndex = new Random().nextInt(artistSongs.size());
             MusicItem randomSong = artistSongs.get(randomIndex);
 
             Intent playlistIntent = new Intent(this, MusicService.class);
@@ -280,93 +334,7 @@ public class ArtistDetailActivity extends AppCompatActivity {
         });
     }
 
-    private boolean initializeMiniPlayer() {
-        try {
-            miniPlayerContainer = findViewById(R.id.miniPlayerContainer);
-            miniAlbumArt = findViewById(R.id.miniAlbumArt);
-            miniSongTitle = findViewById(R.id.miniSongTitle);
-            miniArtistName = findViewById(R.id.miniArtistName);
-            miniPlayPauseButton = findViewById(R.id.miniPlayPauseButton);
-            miniNextButton = findViewById(R.id.miniNextButton);
-            miniCloseButton = findViewById(R.id.miniCloseButton);
-
-            if (miniPlayerContainer == null || miniAlbumArt == null ||
-                    miniSongTitle == null || miniArtistName == null ||
-                    miniPlayPauseButton == null || miniNextButton == null || miniCloseButton == null) {
-                Log.e(TAG, "One or more mini player components are null");
-                return false;
-            }
-
-            miniPlayerContainer.setOnClickListener(v -> {
-                if (!isActivityDestroyed) {
-                    openNowPlayingActivity();
-                }
-            });
-
-            miniPlayPauseButton.setOnClickListener(v -> {
-                if (!isActivityDestroyed) {
-                    try {
-                        Intent serviceIntent = new Intent(this, MusicService.class);
-                        serviceIntent.setAction(MusicService.ACTION_TOGGLE_PLAY_PAUSE);
-                        startService(serviceIntent);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error toggling play/pause: " + e.getMessage(), e);
-                    }
-                }
-            });
-
-            miniNextButton.setOnClickListener(v -> {
-                if (!isActivityDestroyed) {
-                    try {
-                        Intent serviceIntent = new Intent(this, MusicService.class);
-                        serviceIntent.setAction(MusicService.ACTION_NEXT);
-                        startService(serviceIntent);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error playing next: " + e.getMessage(), e);
-                    }
-                }
-            });
-
-            miniCloseButton.setOnClickListener(v -> {
-                if (!isActivityDestroyed) {
-                    try {
-                        Intent serviceIntent = new Intent(this, MusicService.class);
-                        serviceIntent.setAction(MusicService.ACTION_STOP);
-                        startService(serviceIntent);
-                        hideMiniPlayer();
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error stopping music: " + e.getMessage(), e);
-                    }
-                }
-            });
-
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "Error initializing mini player: " + e.getMessage(), e);
-            return false;
-        }
-    }
-
-    private void setupToolbar() {
-        try {
-            setSupportActionBar(toolbar);
-            if (getSupportActionBar() != null) {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-                getSupportActionBar().setDisplayShowHomeEnabled(true);
-                getSupportActionBar().setTitle("");
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up toolbar: " + e.getMessage(), e);
-        }
-    }
-
-    private void setupArtistHeader() {
-        try {
-            artistNameTextView.setText(artistItem.getArtistName());
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting up artist header: " + e.getMessage(), e);
-        }
-    }
+    // ── RecyclerView ──────────────────────────────────────────────────────────
 
     private void setupRecyclerView() {
         try {
@@ -375,400 +343,175 @@ public class ArtistDetailActivity extends AppCompatActivity {
             songsRecyclerView.setAdapter(musicAdapter);
 
             musicAdapter.setOnMusicItemClickListener(new MusicAdapter.OnMusicItemClickListener() {
-                @Override
-                public void onMusicItemClick(MusicItem musicItem) {
+                @Override public void onMusicItemClick(MusicItem musicItem) {
                     startMusicServiceAndOpenNowPlaying(musicItem);
                 }
-
-                @Override
-                public void onOptionClick(MusicItem musicItem) {
+                @Override public void onOptionClick(MusicItem musicItem) {
                     showSongOptionsSheet(musicItem);
                 }
             });
 
-            // Set long click listener to show options dialog
-            musicAdapter.setOnMusicItemLongClickListener(musicItem -> {
-                showSongOptionsDialog(musicItem);
-                return true;
-            });
+            // No long-press listener – vert icon handles everything.
+
         } catch (Exception e) {
-            Log.e(TAG, "Error setting up RecyclerView: " + e.getMessage(), e);
+            Log.e(TAG, "Error setting up RecyclerView", e);
         }
     }
+
+    // ── Song options bottom sheet ─────────────────────────────────────────────
 
     private void showSongOptionsSheet(MusicItem musicItem) {
         if (musicItem == null) return;
-
         SongOptionsBottomSheet sheet = SongOptionsBottomSheet.newInstance(musicItem);
         sheet.setListener(new SongOptionsBottomSheet.SongOptionsListener() {
-
-            @Override
-            public void onAddToCollection(MusicItem item) {
+            @Override public void onAddToCollection(MusicItem item) {
                 showAddToCollectionBottomSheet(item);
             }
-
-            @Override
-            public void onViewDetails(MusicItem item) {
+            @Override public void onViewDetails(MusicItem item) {
                 SongDetailBottomSheet.newInstance(item)
                         .show(getSupportFragmentManager(), "song_detail");
             }
-
-            @Override
-            public void onDelete(MusicItem item) {
+            @Override public void onDelete(MusicItem item) {
                 showDeleteConfirmationDialog(item);
             }
+            @Override public void onPin(MusicItem item) {
+                toggleSongPin(item);
+            }
         });
-
         sheet.show(getSupportFragmentManager(), "song_options");
     }
 
-    private void showSongOptionsDialog(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
-        String[] options = {"View Details", "Add to Collection", "Delete"};
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(musicItem.getTitle())
-                .setItems(options, (dialog, which) -> {
-                    switch (which) {
-                        case 0: // View Details
-                            showSongDetailDialog(musicItem);
-                            break;
-                        case 1: // Add to Collection
-                            showAddToCollectionBottomSheet(musicItem);
-                            break;
-                        case 2: // Delete
-                            showDeleteConfirmationDialog(musicItem);
-                            break;
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void showSongDetailDialog(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
-        View dialogView = LayoutInflater.from(this)
-                .inflate(R.layout.dialog_song_details, null);
-
-        TextView titleText = dialogView.findViewById(R.id.detailTitleText);
-        TextView artistText = dialogView.findViewById(R.id.detailArtistText);
-        TextView albumText = dialogView.findViewById(R.id.detailAlbumText);
-        TextView durationText = dialogView.findViewById(R.id.detailDurationText);
-        TextView pathText = dialogView.findViewById(R.id.detailPathText);
-        TextView fileSizeText = dialogView.findViewById(R.id.detailFileSizeText);
-
-        titleText.setText(musicItem.getTitle());
-        artistText.setText(musicItem.getArtist());
-        albumText.setText(musicItem.getAlbum());
-        durationText.setText(formatDuration(musicItem.getDuration()));
-        pathText.setText(musicItem.getPath());
-
-        // Get file size
-        File file = new File(musicItem.getPath());
-        if (file.exists()) {
-            long fileSizeInBytes = file.length();
-            String fileSize = formatFileSize(fileSizeInBytes);
-            fileSizeText.setText(fileSize);
-        } else {
-            fileSizeText.setText("Unknown");
-        }
-
-        new MaterialAlertDialogBuilder(this)
-                .setView(dialogView)
-                .setPositiveButton("Close", null)
-                .show();
-    }
-
-    private String formatDuration(long duration) {
-        long seconds = (duration / 1000) % 60;
-        long minutes = (duration / (1000 * 60)) % 60;
-        long hours = (duration / (1000 * 60 * 60));
-
-        if (hours > 0) {
-            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-        } else {
-            return String.format("%02d:%02d", minutes, seconds);
-        }
-    }
-
-    private String formatFileSize(long size) {
-        if (size <= 0) return "0 B";
-
-        final String[] units = new String[]{"B", "KB", "MB", "GB"};
-        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-
-        return String.format("%.2f %s",
-                size / Math.pow(1024, digitGroups),
-                units[digitGroups]);
-    }
+    // ── Delete ────────────────────────────────────────────────────────────────
 
     private void showDeleteConfirmationDialog(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
+        if (musicItem == null) return;
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Delete Song")
                 .setMessage("Are you sure you want to delete \"" + musicItem.getTitle() + "\"? This action cannot be undone.")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    deleteSong(musicItem);
-                })
+                .setPositiveButton("Delete", (dialog, which) -> deleteSong(musicItem))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
     private void deleteSong(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
+        if (musicItem == null) return;
         try {
             Uri uri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    musicItem.getId()
-            );
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, musicItem.getId());
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
-                    int rowsDeleted = getContentResolver().delete(uri, null, null);
-                    if (rowsDeleted > 0) {
-                        onSongDeleteSuccess(musicItem);
-                    } else {
-                        Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (SecurityException securityException) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        RecoverableSecurityException recoverableException;
-                        if (securityException instanceof RecoverableSecurityException) {
-                            recoverableException = (RecoverableSecurityException) securityException;
-
-                            pendingDeleteItem = musicItem;
-                            IntentSenderRequest intentSenderRequest = new IntentSenderRequest.Builder(
-                                    recoverableException.getUserAction().getActionIntent().getIntentSender()
-                            ).build();
-                            deletePermissionLauncher.launch(intentSenderRequest);
-                        } else {
-                            throw securityException;
-                        }
-                    } else {
-                        throw securityException;
-                    }
-                }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                try {
-                    int rowsDeleted = getContentResolver().delete(uri, null, null);
-                    if (rowsDeleted > 0) {
-                        onSongDeleteSuccess(musicItem);
-                    } else {
-                        Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (SecurityException securityException) {
-                    RecoverableSecurityException recoverableException;
-                    if (securityException instanceof RecoverableSecurityException) {
-                        recoverableException = (RecoverableSecurityException) securityException;
-
+                    int rows = getContentResolver().delete(uri, null, null);
+                    if (rows > 0) onSongDeleteSuccess(musicItem);
+                    else Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
+                } catch (SecurityException se) {
+                    if (se instanceof RecoverableSecurityException) {
                         pendingDeleteItem = musicItem;
-                        IntentSenderRequest intentSenderRequest = new IntentSenderRequest.Builder(
-                                recoverableException.getUserAction().getActionIntent().getIntentSender()
-                        ).build();
-                        deletePermissionLauncher.launch(intentSenderRequest);
+                        deletePermissionLauncher.launch(new IntentSenderRequest.Builder(
+                                ((RecoverableSecurityException) se).getUserAction()
+                                        .getActionIntent().getIntentSender()).build());
                     } else {
-                        Toast.makeText(this,
-                                "Permission denied. Cannot delete this file.",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Permission denied.", Toast.LENGTH_SHORT).show();
                     }
                 }
             } else {
-                int rowsDeleted = getContentResolver().delete(uri, null, null);
-
-                if (rowsDeleted > 0) {
-                    File file = new File(musicItem.getPath());
-                    file.delete();
-                    onSongDeleteSuccess(musicItem);
-                } else {
-                    Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
-                }
+                int rows = getContentResolver().delete(uri, null, null);
+                if (rows > 0) { new File(musicItem.getPath()).delete(); onSongDeleteSuccess(musicItem); }
+                else Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
             }
-
         } catch (Exception e) {
-            Toast.makeText(this, "Error deleting song: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Error deleting song: " + e.getMessage(), e);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error deleting song", e);
         }
     }
 
     private void deleteSongAfterPermission(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
+        if (musicItem == null) return;
         try {
             Uri uri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    musicItem.getId()
-            );
-
-            int rowsDeleted = getContentResolver().delete(uri, null, null);
-
-            if (rowsDeleted > 0) {
-                onSongDeleteSuccess(musicItem);
-            } else {
-                Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
-            }
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, musicItem.getId());
+            int rows = getContentResolver().delete(uri, null, null);
+            if (rows > 0) onSongDeleteSuccess(musicItem);
+            else Toast.makeText(this, "Failed to delete song", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(this, "Error deleting song: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            Log.e(TAG, "Error deleting song after permission: " + e.getMessage(), e);
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error deleting song after permission", e);
         }
     }
 
     private void onSongDeleteSuccess(MusicItem musicItem) {
         Toast.makeText(this, "Song deleted successfully", Toast.LENGTH_SHORT).show();
-
         artistSongs.remove(musicItem);
-        if (musicAdapter != null) {
-            musicAdapter.notifyDataSetChanged();
-        }
-
-        songCountTextView.setText(artistSongs.size() + " songs");
-
-        long totalDuration = 0;
-        for (MusicItem song : artistSongs) {
-            totalDuration += song.getDuration();
-        }
-        totalDurationTextView.setText(formatTotalDuration(totalDuration));
-
+        if (musicAdapter != null) musicAdapter.notifyDataSetChanged();
+        updateSongCountAndDuration();
         updateUI();
-
-        // If the deleted song is currently playing, stop it
-        if (currentPlayingItem != null &&
-                currentPlayingItem.getId() == musicItem.getId()) {
-            Intent stopIntent = new Intent(this, MusicService.class);
-            stopIntent.setAction(MusicService.ACTION_STOP);
-            startService(stopIntent);
+        if (currentPlayingItem != null && currentPlayingItem.getId() == musicItem.getId()) {
+            Intent stop = new Intent(this, MusicService.class);
+            stop.setAction(MusicService.ACTION_STOP);
+            startService(stop);
         }
     }
 
+    // ── Add to collection ─────────────────────────────────────────────────────
+
     private void showAddToCollectionBottomSheet(MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
+        if (musicItem == null) return;
         List<Collection> collections = collectionManager.getAllCollections();
-
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
-        View view = LayoutInflater.from(this).inflate(
-                R.layout.bottom_sheet_add_to_collection,
-                null
-        );
-
-        RecyclerView collectionsRecyclerView = view.findViewById(R.id.collectionsRecyclerView);
-        TextView emptyCollectionsText = view.findViewById(R.id.emptyCollectionsText);
-        MaterialButton createNewCollectionButton = view.findViewById(R.id.createNewCollectionButton);
-
-        collectionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_add_to_collection, null);
+        RecyclerView rv = view.findViewById(R.id.collectionsRecyclerView);
+        TextView emptyText = view.findViewById(R.id.emptyCollectionsText);
+        View createBtn = view.findViewById(R.id.createNewCollectionButton);
+        rv.setLayoutManager(new LinearLayoutManager(this));
         if (collections.isEmpty()) {
-            collectionsRecyclerView.setVisibility(View.GONE);
-            emptyCollectionsText.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE); emptyText.setVisibility(View.VISIBLE);
         } else {
-            collectionsRecyclerView.setVisibility(View.VISIBLE);
-            emptyCollectionsText.setVisibility(View.GONE);
-
+            rv.setVisibility(View.VISIBLE); emptyText.setVisibility(View.GONE);
             AddToCollectionAdapter adapter = new AddToCollectionAdapter(
-                    collections,
-                    musicItem.getId(),
-                    collectionManager,
+                    collections, musicItem.getId(), collectionManager,
                     collection -> {
-                        boolean added = collectionManager.addSongToCollection(
-                                collection.getId(),
-                                musicItem.getId()
-                        );
+                        boolean added = collectionManager.addSongToCollection(collection.getId(), musicItem.getId());
                         if (added) {
-                            Toast.makeText(this,
-                                    "Added to " + collection.getName(),
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Added to " + collection.getName(), Toast.LENGTH_SHORT).show();
                             broadcastCollectionChange(ACTION_SONG_ADDED_TO_COLLECTION);
-                            bottomSheetDialog.dismiss();
+                            dialog.dismiss();
                         } else {
-                            Toast.makeText(this,
-                                    "Song already in " + collection.getName(),
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Song already in " + collection.getName(), Toast.LENGTH_SHORT).show();
                         }
-                    }
-            );
-            collectionsRecyclerView.setAdapter(adapter);
+                    });
+            rv.setAdapter(adapter);
         }
-
-        createNewCollectionButton.setOnClickListener(v -> {
-            bottomSheetDialog.dismiss();
-            showCreateCollectionDialog(musicItem);
-        });
-
-        bottomSheetDialog.setContentView(view);
-        bottomSheetDialog.show();
+        createBtn.setOnClickListener(v -> { dialog.dismiss(); showCreateCollectionDialog(musicItem); });
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void showCreateCollectionDialog(MusicItem musicItem) {
-        View dialogView = LayoutInflater.from(this)
-                .inflate(R.layout.dialog_add_collection, null);
-
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_collection, null);
         TextInputEditText editTextName = dialogView.findViewById(R.id.editTextCollectionName);
-
         new MaterialAlertDialogBuilder(this)
-                .setTitle("New Collection")
-                .setView(dialogView)
+                .setTitle("New Collection").setView(dialogView)
                 .setPositiveButton("Create", (dialog, which) -> {
-                    String collectionName = editTextName.getText().toString().trim();
-                    if (!collectionName.isEmpty()) {
-                        createCollectionAndAddSong(collectionName, musicItem);
-                    } else {
-                        Toast.makeText(this,
-                                "Collection name cannot be empty",
-                                Toast.LENGTH_SHORT).show();
-                    }
+                    String name = editTextName.getText() != null
+                            ? editTextName.getText().toString().trim() : "";
+                    if (!name.isEmpty()) createCollectionAndAddSong(name, musicItem);
+                    else Toast.makeText(this, "Collection name cannot be empty", Toast.LENGTH_SHORT).show();
                 })
-                .setNegativeButton("Cancel", null)
-                .show();
+                .setNegativeButton("Cancel", null).show();
     }
 
     private void createCollectionAndAddSong(String collectionName, MusicItem musicItem) {
-        if (musicItem == null) {
-            return;
-        }
-
-        List<Collection> existingCollections = collectionManager.getAllCollections();
-        for (Collection collection : existingCollections) {
-            if (collection.getName().equalsIgnoreCase(collectionName)) {
-                Toast.makeText(this,
-                        "Collection already exists",
-                        Toast.LENGTH_SHORT).show();
+        if (musicItem == null) return;
+        for (Collection c : collectionManager.getAllCollections()) {
+            if (c.getName().equalsIgnoreCase(collectionName)) {
+                Toast.makeText(this, "Collection already exists", Toast.LENGTH_SHORT).show();
                 return;
             }
         }
-
         Collection newCollection = collectionManager.createCollection(collectionName);
-
-        boolean added = collectionManager.addSongToCollection(
-                newCollection.getId(),
-                musicItem.getId()
-        );
-
-        if (added) {
-            Toast.makeText(this,
-                    "Created \"" + collectionName + "\" and added song",
-                    Toast.LENGTH_SHORT).show();
-            broadcastCollectionChange(ACTION_COLLECTION_CREATED);
-        } else {
-            Toast.makeText(this,
-                    "Collection created",
-                    Toast.LENGTH_SHORT).show();
-            broadcastCollectionChange(ACTION_COLLECTION_CREATED);
-        }
+        collectionManager.addSongToCollection(newCollection.getId(), musicItem.getId());
+        Toast.makeText(this, "Created \"" + collectionName + "\" and added song", Toast.LENGTH_SHORT).show();
+        broadcastCollectionChange(ACTION_COLLECTION_CREATED);
     }
 
     private void broadcastCollectionChange(String action) {
@@ -776,195 +519,71 @@ public class ArtistDetailActivity extends AppCompatActivity {
             Intent intent = new Intent(action);
             intent.setPackage(getPackageName());
             sendBroadcast(intent);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private void loadArtistSongs() {
-        if (!hasStoragePermission()) {
-            Toast.makeText(this, "Storage permission required to load songs", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (isLoading) return;
-
-        isLoading = true;
-        showLoading(true);
-
-        executorService.execute(() -> {
-            List<MusicItem> tempSongsList = new ArrayList<>();
-
-            ContentResolver contentResolver = getContentResolver();
-            Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-
-            String[] projection = {
-                    MediaStore.Audio.Media._ID,
-                    MediaStore.Audio.Media.TITLE,
-                    MediaStore.Audio.Media.ARTIST,
-                    MediaStore.Audio.Media.ALBUM,
-                    MediaStore.Audio.Media.DURATION,
-                    MediaStore.Audio.Media.DATA,
-                    MediaStore.Audio.Media.ALBUM_ID,
-                    MediaStore.Audio.Media.TRACK
-            };
-
-            String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0 AND " +
-                    MediaStore.Audio.Media.ARTIST + " = ?";
-            String[] selectionArgs = {artistItem.getArtistName()};
-            String sortOrder = MediaStore.Audio.Media.ALBUM + " ASC, " +
-                    MediaStore.Audio.Media.TRACK + " ASC, " +
-                    MediaStore.Audio.Media.TITLE + " ASC";
-
-            try (Cursor cursor = contentResolver.query(musicUri, projection, selection, selectionArgs, sortOrder)) {
-                if (cursor != null && cursor.moveToFirst()) {
-                    int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
-                    int titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
-                    int artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
-                    int albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
-                    int durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
-                    int pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
-                    int albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-
-                    do {
-                        long id = cursor.getLong(idColumn);
-                        String title = cursor.getString(titleColumn);
-                        String artist = cursor.getString(artistColumn);
-                        String album = cursor.getString(albumColumn);
-                        long duration = cursor.getLong(durationColumn);
-                        String path = cursor.getString(pathColumn);
-                        long albumId = cursor.getLong(albumIdColumn);
-
-                        Uri albumArtUri = Uri.parse("content://media/external/audio/albumart/" + albumId);
-
-                        MusicItem musicItem = new MusicItem(id, title, artist, album, duration, path, albumArtUri);
-                        tempSongsList.add(musicItem);
-
-                    } while (cursor.moveToNext());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                runOnUiThread(() -> {
-                    showLoading(false);
-                    isLoading = false;
-                    Toast.makeText(this, "Error loading artist songs", Toast.LENGTH_SHORT).show();
-                });
-                return;
-            }
-
-            runOnUiThread(() -> {
-                showLoading(false);
-                isLoading = false;
-
-                artistSongs.clear();
-                artistSongs.addAll(tempSongsList);
-
-                songCountTextView.setText(artistSongs.size() + " songs");
-
-                long totalDuration = 0;
-                for (MusicItem song : artistSongs) {
-                    totalDuration += song.getDuration();
-                }
-                totalDurationTextView.setText(formatTotalDuration(totalDuration));
-
-                if (musicAdapter != null) {
-                    musicAdapter.notifyDataSetChanged();
-                }
-
-                updateUI();
-            });
-        });
-    }
-
-    private boolean hasStoragePermission() {
-        String permission;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            permission = Manifest.permission.READ_MEDIA_AUDIO;
-        } else {
-            permission = Manifest.permission.READ_EXTERNAL_STORAGE;
-        }
-        return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED;
-    }
+    // ── Playback ──────────────────────────────────────────────────────────────
 
     private void startMusicServiceAndOpenNowPlaying(MusicItem musicItem) {
         startMusicServiceWithPlaylist(musicItem);
-
-        new android.os.Handler().postDelayed(() -> {
-            openNowPlaying(musicItem);
-        }, 200);
-    }
-
-    private void startMusicService(MusicItem musicItem) {
-        startMusicServiceWithPlaylist(musicItem);
+        new android.os.Handler().postDelayed(() -> openNowPlaying(musicItem), 200);
     }
 
     private void startMusicServiceWithPlaylist(MusicItem selectedSong) {
-        if (artistSongs.isEmpty()) {
-            return;
-        }
+        if (artistSongs.isEmpty()) return;
+        int idx = 0;
+        for (int i = 0; i < artistSongs.size(); i++)
+            if (artistSongs.get(i).getId() == selectedSong.getId()) { idx = i; break; }
 
-        int selectedIndex = -1;
-        for (int i = 0; i < artistSongs.size(); i++) {
-            if (artistSongs.get(i).getId() == selectedSong.getId()) {
-                selectedIndex = i;
-                break;
-            }
-        }
+        Intent pl = new Intent(this, MusicService.class);
+        pl.setAction(MusicService.ACTION_SET_PLAYLIST);
+        pl.putParcelableArrayListExtra("playlist", new ArrayList<>(artistSongs));
+        pl.putExtra("start_index", idx);
+        startService(pl);
 
-        if (selectedIndex == -1) {
-            selectedIndex = 0;
-        }
-
-        Intent playlistIntent = new Intent(this, MusicService.class);
-        playlistIntent.setAction(MusicService.ACTION_SET_PLAYLIST);
-        playlistIntent.putParcelableArrayListExtra("playlist", new ArrayList<>(artistSongs));
-        playlistIntent.putExtra("start_index", selectedIndex);
-        startService(playlistIntent);
-
-        Intent playIntent = new Intent(this, MusicService.class);
-        playIntent.setAction(MusicService.ACTION_PLAY);
-        playIntent.putExtra("music_item", selectedSong);
-        startService(playIntent);
+        Intent play = new Intent(this, MusicService.class);
+        play.setAction(MusicService.ACTION_PLAY);
+        play.putExtra("music_item", selectedSong);
+        startService(play);
     }
 
     private void openNowPlaying(MusicItem musicItem) {
         Intent intent = new Intent(this, NowPlayingActivity.class);
         intent.putExtra("music_item", (Parcelable) musicItem);
         startActivity(intent);
-
-        overridePendingTransition(
-                R.anim.slide_in_bottom,
-                R.anim.slide_out_top
-        );
+        overridePendingTransition(R.anim.slide_in_bottom, R.anim.slide_out_top);
     }
 
     private void openNowPlayingActivity() {
-        if (isActivityDestroyed || currentPlayingItem == null) {
-            return;
-        }
-
+        if (isActivityDestroyed || currentPlayingItem == null) return;
         try {
             Intent intent = new Intent(this, NowPlayingActivity.class);
             intent.putExtra("music_item", currentPlayingItem);
             startActivity(intent);
+            overridePendingTransition(R.anim.slide_in_bottom, R.anim.slide_out_top);
+        } catch (Exception e) { Log.e(TAG, "Error opening NowPlaying", e); }
+    }
 
-            overridePendingTransition(
-                    R.anim.slide_in_bottom,
-                    R.anim.slide_out_top
-            );
-        } catch (Exception e) {
-            Log.e(TAG, "Error opening now playing activity: " + e.getMessage(), e);
-        }
+    // ── UI helpers ────────────────────────────────────────────────────────────
+
+    private void updateSongCountAndDuration() {
+        songCountTextView.setText(artistSongs.size() + " songs");
+        long total = 0;
+        for (MusicItem s : artistSongs) total += s.getDuration();
+        if (totalDurationTextView != null) totalDurationTextView.setText(formatTotalDuration(total));
+    }
+
+    private String formatTotalDuration(long totalMs) {
+        long s = totalMs / 1000, h = s / 3600, m = (s % 3600) / 60, sec = s % 60;
+        if (h > 0)  return String.format("%dh %dm", h, m);
+        if (m > 0)  return String.format("%dm %ds", m, sec);
+        return String.format("%ds", sec);
     }
 
     private void updateUI() {
-        if (artistSongs.isEmpty()) {
-            emptyState.setVisibility(View.VISIBLE);
-            songsRecyclerView.setVisibility(View.GONE);
-        } else {
-            emptyState.setVisibility(View.GONE);
-            songsRecyclerView.setVisibility(View.VISIBLE);
-        }
+        boolean empty = artistSongs.isEmpty();
+        emptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        songsRecyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
     }
 
     private void showLoading(boolean show) {
@@ -983,202 +602,213 @@ public class ArtistDetailActivity extends AppCompatActivity {
                     songsRecyclerView.getPaddingLeft(),
                     songsRecyclerView.getPaddingTop(),
                     songsRecyclerView.getPaddingRight(),
-                    isVisible ? height : 0
-            );
-
-            songsRecyclerView.post(() -> {
-                if (songsRecyclerView.getAdapter() != null) {
-                    songsRecyclerView.getAdapter().notifyDataSetChanged();
-                }
-            });
+                    isVisible ? height : 0);
         }
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private void registerMusicUpdateReceiver() {
-        try {
-            if (!isReceiverRegistered && musicUpdateReceiver != null) {
-                IntentFilter filter = new IntentFilter();
-                filter.addAction(MusicService.ACTION_MUSIC_UPDATED);
-                filter.addAction(MusicService.ACTION_PLAYBACK_STATE_CHANGED);
-                filter.addAction(MusicService.ACTION_HIDE_MINI_PLAYER);
-                filter.addAction("MINI_PLAYER_VISIBILITY_CHANGED");
-
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    registerReceiver(musicUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    registerReceiver(musicUpdateReceiver, filter);
-                }
-
-                isReceiverRegistered = true;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error registering broadcast receiver: " + e.getMessage(), e);
-            isReceiverRegistered = false;
-        }
+    private boolean hasStoragePermission() {
+        String perm = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                ? Manifest.permission.READ_MEDIA_AUDIO : Manifest.permission.READ_EXTERNAL_STORAGE;
+        return ContextCompat.checkSelfPermission(this, perm) == PackageManager.PERMISSION_GRANTED;
     }
 
-    public void showMiniPlayer(MusicItem musicItem) {
-        if (isActivityDestroyed || isFinishing() || isDestroyed() || musicItem == null) {
+    // ── Load songs ────────────────────────────────────────────────────────────
+
+    private void loadArtistSongs() {
+        if (!hasStoragePermission()) {
+            Toast.makeText(this, "Storage permission required", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (isLoading) return;
+        isLoading = true;
+        showLoading(true);
 
-        try {
-            currentPlayingItem = musicItem;
+        executorService.execute(() -> {
+            List<MusicItem> temp = new ArrayList<>();
+            Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+            String[] projection = {
+                    MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE,
+                    MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM,
+                    MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.DATA,
+                    MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.TRACK
+            };
+            String selection  = MediaStore.Audio.Media.IS_MUSIC + " != 0 AND "
+                    + MediaStore.Audio.Media.ARTIST + " = ?";
+            String[] selArgs  = { artistItem.getArtistName() };
+            String sortOrder  = MediaStore.Audio.Media.ALBUM + " ASC, "
+                    + MediaStore.Audio.Media.TRACK + " ASC, "
+                    + MediaStore.Audio.Media.TITLE + " ASC";
 
-            if (miniSongTitle == null || miniArtistName == null ||
-                    miniAlbumArt == null || miniPlayerContainer == null) {
-                Log.e(TAG, "Mini player components are null");
+            try (Cursor cursor = getContentResolver().query(musicUri, projection, selection, selArgs, sortOrder)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    do {
+                        long   id       = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+                        String title    = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+                        String artist   = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+                        String album    = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM));
+                        long   duration = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION));
+                        String path     = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+                        long   albumId  = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID));
+                        temp.add(new MusicItem(id, title, artist, album, duration, path,
+                                Uri.parse("content://media/external/audio/albumart/" + albumId)));
+                    } while (cursor.moveToNext());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> {
+                    showLoading(false); isLoading = false;
+                    Toast.makeText(this, "Error loading artist songs", Toast.LENGTH_SHORT).show();
+                });
                 return;
             }
 
-            miniSongTitle.setText(musicItem.getTitle());
-            miniArtistName.setText(musicItem.getArtist());
+            restoreSongPinnedState(temp);
 
-            try {
-                Glide.with(this)
-                        .load(musicItem.getAlbumArtUri())
-                        .placeholder(R.drawable.ic_outline_music_note_24)
-                        .error(R.drawable.ic_outline_music_note_24)
-                        .into(miniAlbumArt);
+            runOnUiThread(() -> {
+                showLoading(false);
+                isLoading = false;
+                artistSongs.clear();
+                artistSongs.addAll(temp);
+                updateSongCountAndDuration();
+                if (musicAdapter != null) musicAdapter.notifyDataSetChanged();
+                updateUI();
+            });
+        });
+    }
 
-            } catch (Exception e) {
-                Log.e(TAG, "Error loading album art: " + e.getMessage(), e);
-            }
+    // ── Mini player ───────────────────────────────────────────────────────────
 
-            if (!isMiniPlayerVisible) {
-                isMiniPlayerVisible = true;
-                miniPlayerContainer.setVisibility(View.VISIBLE);
-                miniPlayerContainer.setTranslationY(miniPlayerContainer.getHeight());
-                miniPlayerContainer.animate()
-                        .translationY(0)
-                        .setDuration(300)
-                        .start();
-            }
+    private boolean initializeMiniPlayer() {
+        try {
+            miniPlayerContainer = findViewById(R.id.miniPlayerContainer);
+            miniAlbumArt        = findViewById(R.id.miniAlbumArt);
+            miniSongTitle       = findViewById(R.id.miniSongTitle);
+            miniArtistName      = findViewById(R.id.miniArtistName);
+            miniPlayPauseButton = findViewById(R.id.miniPlayPauseButton);
+            miniNextButton      = findViewById(R.id.miniNextButton);
+            miniCloseButton     = findViewById(R.id.miniCloseButton);
 
-            updateMiniPlayerPlayButton();
+            if (miniPlayerContainer == null || miniAlbumArt == null ||
+                    miniSongTitle == null || miniArtistName == null ||
+                    miniPlayPauseButton == null || miniNextButton == null || miniCloseButton == null)
+                return false;
+
+            miniPlayerContainer.setOnClickListener(v -> { if (!isActivityDestroyed) openNowPlayingActivity(); });
+            miniPlayPauseButton.setOnClickListener(v -> sendServiceAction(MusicService.ACTION_TOGGLE_PLAY_PAUSE));
+            miniNextButton.setOnClickListener(v -> sendServiceAction(MusicService.ACTION_NEXT));
+            miniCloseButton.setOnClickListener(v -> { sendServiceAction(MusicService.ACTION_STOP); hideMiniPlayer(); });
+
+            return true;
         } catch (Exception e) {
-            Log.e(TAG, "Error showing mini player: " + e.getMessage(), e);
+            Log.e(TAG, "Error initializing mini player", e);
+            return false;
         }
+    }
+
+    private void sendServiceAction(String action) {
+        if (isActivityDestroyed) return;
+        try {
+            Intent i = new Intent(this, MusicService.class);
+            i.setAction(action);
+            startService(i);
+        } catch (Exception e) { Log.e(TAG, "Service error: " + action, e); }
+    }
+
+    public void showMiniPlayer(MusicItem item) {
+        if (isActivityDestroyed || isFinishing() || isDestroyed() || item == null) return;
+        currentPlayingItem = item;
+        miniSongTitle.setText(item.getTitle());
+        miniArtistName.setText(item.getArtist());
+        try {
+            Glide.with(this).load(item.getAlbumArtUri())
+                    .placeholder(R.drawable.ic_outline_music_note_24)
+                    .error(R.drawable.ic_outline_music_note_24)
+                    .into(miniAlbumArt);
+        } catch (Exception ignored) {}
+
+        if (!isMiniPlayerVisible) {
+            isMiniPlayerVisible = true;
+            miniPlayerContainer.setVisibility(View.VISIBLE);
+            miniPlayerContainer.setTranslationY(miniPlayerContainer.getHeight());
+            miniPlayerContainer.animate().translationY(0).setDuration(300).start();
+        }
+        updateMiniPlayerPlayButton();
     }
 
     public void hideMiniPlayer() {
-        if (isActivityDestroyed || isFinishing() || isDestroyed()) {
-            return;
-        }
-
-        try {
-            if (isMiniPlayerVisible && miniPlayerContainer != null) {
-                isMiniPlayerVisible = false;
-                miniPlayerContainer.animate()
-                        .translationY(miniPlayerContainer.getHeight())
-                        .setDuration(300)
-                        .withEndAction(() -> {
-                            if (!isActivityDestroyed && miniPlayerContainer != null) {
-                                miniPlayerContainer.setVisibility(View.GONE);
-                            }
-                        })
-                        .start();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error hiding mini player: " + e.getMessage(), e);
-        }
+        if (isActivityDestroyed || !isMiniPlayerVisible || miniPlayerContainer == null) return;
+        isMiniPlayerVisible = false;
+        miniPlayerContainer.animate().translationY(miniPlayerContainer.getHeight()).setDuration(300)
+                .withEndAction(() -> { if (!isActivityDestroyed) miniPlayerContainer.setVisibility(View.GONE); })
+                .start();
     }
 
     public void updateMiniPlayerState(boolean playing) {
-        if (isActivityDestroyed) {
-            return;
-        }
-
-        try {
-            isPlaying = playing;
-            updateMiniPlayerPlayButton();
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating mini player state: " + e.getMessage(), e);
-        }
+        if (isActivityDestroyed) return;
+        isPlaying = playing;
+        updateMiniPlayerPlayButton();
     }
 
     private void updateMiniPlayerPlayButton() {
-        if (isActivityDestroyed || miniPlayPauseButton == null) {
-            return;
-        }
-
-        try {
-            int iconRes = isPlaying ? R.drawable.ic_baseline_pause_24 : R.drawable.ic_baseline_play_arrow_24;
-            miniPlayPauseButton.setIconResource(iconRes);
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating play button: " + e.getMessage(), e);
-        }
+        if (isActivityDestroyed || miniPlayPauseButton == null) return;
+        miniPlayPauseButton.setIconResource(
+                isPlaying ? R.drawable.ic_baseline_pause_24 : R.drawable.ic_baseline_play_arrow_24);
     }
+
+    // ── BroadcastReceiver ─────────────────────────────────────────────────────
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerMusicUpdateReceiver() {
+        if (isReceiverRegistered) return;
+        try {
+            IntentFilter f = new IntentFilter();
+            f.addAction(MusicService.ACTION_MUSIC_UPDATED);
+            f.addAction(MusicService.ACTION_PLAYBACK_STATE_CHANGED);
+            f.addAction(MusicService.ACTION_HIDE_MINI_PLAYER);
+            f.addAction("MINI_PLAYER_VISIBILITY_CHANGED");
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                registerReceiver(musicUpdateReceiver, f, Context.RECEIVER_NOT_EXPORTED);
+            else
+                registerReceiver(musicUpdateReceiver, f);
+
+            isReceiverRegistered = true;
+        } catch (Exception e) { Log.e(TAG, "Error registering receiver", e); }
+    }
+
+    // ── Activity lifecycle ────────────────────────────────────────────────────
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
-            return true;
-        }
+        if (item.getItemId() == android.R.id.home) { onBackPressed(); return true; }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        try {
-            Intent serviceIntent = new Intent(this, MusicService.class);
-            serviceIntent.setAction(MusicService.ACTION_REQUEST_STATE);
-            startService(serviceIntent);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onResume: " + e.getMessage(), e);
-        }
+        try { sendServiceAction(MusicService.ACTION_REQUEST_STATE); } catch (Exception ignored) {}
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        try {
-            if (miniPlayerContainer != null) {
-                miniPlayerContainer.clearAnimation();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error in onPause: " + e.getMessage(), e);
-        }
+        if (miniPlayerContainer != null) miniPlayerContainer.clearAnimation();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         isActivityDestroyed = true;
-
         if (isReceiverRegistered && musicUpdateReceiver != null) {
-            try {
-                unregisterReceiver(musicUpdateReceiver);
-            } catch (IllegalArgumentException e) {
-                Log.w(TAG, "Receiver was not registered or already unregistered");
-            } catch (Exception e) {
-                Log.e(TAG, "Error unregistering receiver: " + e.getMessage(), e);
-            } finally {
-                isReceiverRegistered = false;
-            }
+            try { unregisterReceiver(musicUpdateReceiver); }
+            catch (Exception e) { Log.w(TAG, "Receiver unregister error", e); }
+            finally { isReceiverRegistered = false; }
         }
-
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-        }
-
-        try {
-            currentPlayingItem = null;
-            musicUpdateReceiver = null;
-            artistSongs = null;
-
-            if (!isDestroyed()) {
-                Glide.with(this).clear(miniAlbumArt);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error clearing references: " + e.getMessage(), e);
-        }
+        if (executorService != null && !executorService.isShutdown()) executorService.shutdown();
+        currentPlayingItem  = null;
+        musicUpdateReceiver = null;
+        artistSongs         = null;
+        try { if (!isDestroyed()) Glide.with(this).clear(miniAlbumArt); } catch (Exception ignored) {}
     }
 }

@@ -12,6 +12,7 @@ public class Collection implements Parcelable {
     private List<Long> musicIds;
     private long createdAt;
     private String coverImageUri; // NEW: stores URI string of the cover image
+    private boolean pinned;
 
     public Collection(long id, String name, List<Long> musicIds, long createdAt) {
         this.id = id;
@@ -28,6 +29,7 @@ public class Collection implements Parcelable {
         in.readList(musicIds, Long.class.getClassLoader());
         createdAt = in.readLong();
         coverImageUri = in.readString(); // NEW
+        pinned = in.readByte() != 0;
     }
 
     public static final Creator<Collection> CREATOR = new Creator<Collection>() {
@@ -58,6 +60,9 @@ public class Collection implements Parcelable {
     public String getCoverImageUri() { return coverImageUri; }
     public void setCoverImageUri(String coverImageUri) { this.coverImageUri = coverImageUri; }
 
+    public boolean isPinned() { return pinned; }
+    public void setPinned(boolean pinned) { this.pinned = pinned; }
+
     public int getSongCount() {
         return musicIds != null ? musicIds.size() : 0;
     }
@@ -72,5 +77,7 @@ public class Collection implements Parcelable {
         dest.writeList(musicIds);
         dest.writeLong(createdAt);
         dest.writeString(coverImageUri); // NEW
+        dest.writeByte((byte) (pinned ? 1 : 0));
+
     }
 }

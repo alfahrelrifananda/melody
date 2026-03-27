@@ -12,6 +12,7 @@ public class MusicItem implements Parcelable {
     private long duration;
     private String path;
     private Uri albumArtUri;
+    private boolean pinned;
 
     public MusicItem(long id, String title, String artist, String album,
                      long duration, String path, Uri albumArtUri) {
@@ -22,6 +23,7 @@ public class MusicItem implements Parcelable {
         this.duration = duration;
         this.path = path;
         this.albumArtUri = albumArtUri;
+        this.pinned = false;
     }
 
     protected MusicItem(Parcel in) {
@@ -32,6 +34,7 @@ public class MusicItem implements Parcelable {
         duration = in.readLong();
         path = in.readString();
         albumArtUri = in.readParcelable(Uri.class.getClassLoader());
+        pinned = in.readByte() != 0;
     }
 
     @Override
@@ -43,6 +46,7 @@ public class MusicItem implements Parcelable {
         dest.writeLong(duration);
         dest.writeString(path);
         dest.writeParcelable(albumArtUri, flags);
+        dest.writeByte((byte) (pinned ? 1 : 0));
     }
 
     @Override
@@ -69,6 +73,7 @@ public class MusicItem implements Parcelable {
     public long getDuration() { return duration; }
     public String getPath() { return path; }
     public Uri getAlbumArtUri() { return albumArtUri; }
+    public boolean isPinned() { return pinned; }
 
     public void setId(long id) { this.id = id; }
     public void setTitle(String title) { this.title = title; }
@@ -77,4 +82,5 @@ public class MusicItem implements Parcelable {
     public void setDuration(long duration) { this.duration = duration; }
     public void setPath(String path) { this.path = path; }
     public void setAlbumArtUri(Uri albumArtUri) { this.albumArtUri = albumArtUri; }
+    public void setPinned(boolean pinned) { this.pinned = pinned; }
 }
