@@ -25,16 +25,30 @@
         android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.melody">
+<!--        <activity-->
+<!--            android:name=".MainActivity"-->
+<!--            android:exported="true"-->
+<!--            android:label="@string/app_name">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+
+<!--                <category android:name="android.intent.category.LAUNCHER" />-->
+<!--            </intent-filter>-->
+<!--        </activity>-->
+
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name">
+            android:name=".ui.pages.welcome.WelcomeActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"/>
+
         <activity
             android:name=".ui.pages.nowplaying.NowPlayingActivity"
             android:exported="false"
@@ -50,6 +64,10 @@
         <activity
             android:name=".ui.pages.settings.SettingsActivity"
             android:exported="false" />
+
+        <activity android:name=".ui.pages.all.AllSongsActivity"   android:exported="false" />
+        <activity android:name=".ui.pages.all.AllAlbumsActivity"  android:exported="false" />
+        <activity android:name=".ui.pages.all.AllArtistsActivity" android:exported="false" />
         <service
             android:name=".service.MusicService"
             android:enabled="true"

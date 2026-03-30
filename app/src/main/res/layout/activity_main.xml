@@ -47,34 +47,6 @@
                     android:textColor="?attr/colorOnSurface" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/search_button"
-                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="45dp"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/ic_baseline_search_24"
-                    app:iconSize="24dp"
-                    app:iconGravity="textStart"
-                    app:iconTint="?attr/colorOnSurfaceVariant"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:backgroundTint="?attr/colorSurfaceContainerHigh"
-                    app:cornerRadius="24dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/refresh_button"
-                    style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="45dp"
-                    android:layout_height="38dp"
-                    app:icon="@drawable/ic_baseline_refresh_24"
-                    app:iconSize="24dp"
-                    app:iconGravity="textStart"
-                    app:iconTint="?attr/colorOnSurfaceVariant"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:backgroundTint="?attr/colorSurfaceContainerHigh"
-                    app:cornerRadius="24dp" />
-
-                <com.google.android.material.button.MaterialButton
                     android:id="@+id/settings_button"
                     style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
                     android:layout_width="45dp"
@@ -240,8 +212,8 @@
             android:id="@+id/nav_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="48dp"
+            android:layout_marginEnd="48dp"
             android:layout_marginBottom="24dp"
             android:paddingTop="8dp"
             android:paddingRight="24dp"

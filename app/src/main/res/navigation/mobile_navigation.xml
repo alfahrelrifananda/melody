@@ -3,25 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_music">
+    app:startDestination="@+id/navigation_home">
+
+<!--    <fragment-->
+<!--        android:id="@+id/navigation_music"-->
+<!--        android:name="com.alfahrel.melody.ui.music.MusicFragment"-->
+<!--        android:label="@string/title_music"-->
+<!--        tools:layout="@layout/fragment_music" />-->
 
     <fragment
-        android:id="@+id/navigation_music"
-        android:name="com.alfahrel.melody.ui.music.MusicFragment"
-        android:label="@string/title_music"
-        tools:layout="@layout/fragment_music" />
+        android:id="@+id/navigation_home"
+        android:name="com.alfahrel.melody.ui.home.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/navigation_album"
-        android:name="com.alfahrel.melody.ui.album.AlbumFragment"
-        android:label="@string/title_album"
-        tools:layout="@layout/fragment_album" />
+        android:id="@+id/navigation_search"
+        android:name="com.alfahrel.melody.ui.search.SearchFragment"
+        android:label="Search"
+        tools:layout="@layout/fragment_search" />
 
-    <fragment
-        android:id="@+id/navigation_artist"
-        android:name="com.alfahrel.melody.ui.artist.ArtistFragment"
-        android:label="@string/title_artist"
-        tools:layout="@layout/fragment_artist" />
+
     <fragment
         android:id="@+id/navigation_collection"
         android:name="com.alfahrel.melody.ui.collection.CollectionFragment"

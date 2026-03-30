@@ -1,22 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/navigation_music"
-        android:icon="@drawable/ic_music_note_24"
-        android:title="@string/title_music" />
+<!--    <item-->
+<!--        android:id="@+id/navigation_music"-->
+<!--        android:icon="@drawable/ic_music_note_24"-->
+<!--        android:title="@string/title_music" />-->
 
     <item
-        android:id="@+id/navigation_album"
-        android:icon="@drawable/ic_album_24"
-        android:title="@string/title_album" />
-
-
+        android:id="@+id/navigation_home"
+        android:icon="@drawable/ic_outline_home_24"
+        android:title="Home" />
 
     <item
-        android:id="@+id/navigation_artist"
-        android:icon="@drawable/ic_artist_24"
-        android:title="@string/title_artist" />
+        android:id="@+id/navigation_search"
+        android:icon="@drawable/ic_baseline_search_24"
+        android:title="Search" />
+
+
+
 
     <item
         android:id="@+id/navigation_collection"

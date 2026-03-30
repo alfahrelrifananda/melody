@@ -29,6 +29,7 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -49,6 +50,7 @@ import com.alfahrel.melody.ui.music.MusicItem;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.DynamicColors;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
@@ -85,6 +87,8 @@ public class NowPlayingActivity extends AppCompatActivity {
     private float swipeTouchStartX = 0f;
     private boolean isSwipingDown = false;
     private VelocityTracker velocityTracker;
+
+    private CollectionManager collectionManager;
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -155,6 +159,8 @@ public class NowPlayingActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        collectionManager = new CollectionManager(this);
 
         setupClickListeners();
         setupProgressIndicator();
@@ -475,61 +481,87 @@ public class NowPlayingActivity extends AppCompatActivity {
         binding.nextButton.setOnClickListener(v -> playNext());
         binding.shuffleButton.setOnClickListener(v -> toggleShuffle());
         binding.repeatButton.setOnClickListener(v -> toggleRepeat());
-        binding.addToCollection.setOnClickListener(v -> showAddToCollectionBottomSheet());
+        binding.addToCollection.setOnClickListener(v -> {
+            if (currentSong != null) {
+                showAddToCollectionBottomSheet(currentSong);
+            } else {
+                Toast.makeText(this, "No song is currently playing", Toast.LENGTH_SHORT).show();
+            }
+        });
         binding.queueButton.setOnClickListener(v -> showQueueBottomSheet());
     }
 
-    private void showAddToCollectionBottomSheet() {
-        if (currentSong == null) {
-            Toast.makeText(this, "No song is currently playing", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        CollectionManager collectionManager = new CollectionManager(this);
+    private void showAddToCollectionBottomSheet(MusicItem song) {
+        if (song == null) return;
         List<Collection> collections = collectionManager.getAllCollections();
-
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(this);
-        View view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_add_to_collection, null);
-
-        RecyclerView collectionsRecyclerView = view.findViewById(R.id.collectionsRecyclerView);
-        android.widget.TextView emptyCollectionsText = view.findViewById(R.id.emptyCollectionsText);
-        MaterialButton createNewCollectionButton = view.findViewById(R.id.createNewCollectionButton);
-
-        collectionsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = LayoutInflater.from(this)
+                .inflate(R.layout.bottom_sheet_add_to_collection, null);
+        RecyclerView rv        = view.findViewById(R.id.collectionsRecyclerView);
+        TextView emptyText     = view.findViewById(R.id.emptyCollectionsText);
+        View createBtn         = view.findViewById(R.id.createNewCollectionButton);
+        rv.setLayoutManager(new LinearLayoutManager(this));
 
         if (collections.isEmpty()) {
-            collectionsRecyclerView.setVisibility(View.GONE);
-            emptyCollectionsText.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE);
+            emptyText.setVisibility(View.VISIBLE);
         } else {
-            collectionsRecyclerView.setVisibility(View.VISIBLE);
-            emptyCollectionsText.setVisibility(View.GONE);
-
-            AddToCollectionAdapter adapter = new AddToCollectionAdapter(
-                    collections,
-                    currentSong.getId(),
-                    collectionManager,
-                    collection -> {
-                        boolean added = collectionManager.addSongToCollection(collection.getId(), currentSong.getId());
+            rv.setVisibility(View.VISIBLE);
+            emptyText.setVisibility(View.GONE);
+            AddToCollectionAdapter colAdapter = new AddToCollectionAdapter(
+                    collections, song.getId(), collectionManager,
+                    col -> {
+                        boolean added = collectionManager.addSongToCollection(col.getId(), song.getId());
                         if (added) {
-                            Toast.makeText(this, "Added to " + collection.getName(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this,
+                                    "Added to " + col.getName(), Toast.LENGTH_SHORT).show();
                             broadcastCollectionChange(ACTION_SONG_ADDED_TO_COLLECTION);
-                            bottomSheetDialog.dismiss();
+                            dialog.dismiss();
                         } else {
-                            Toast.makeText(this, "Song already in " + collection.getName(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this,
+                                    "Song already in " + col.getName(), Toast.LENGTH_SHORT).show();
                         }
-                    }
-            );
-            collectionsRecyclerView.setAdapter(adapter);
+                    });
+            rv.setAdapter(colAdapter);
         }
-
-        createNewCollectionButton.setOnClickListener(v -> {
-            bottomSheetDialog.dismiss();
-            showCreateCollectionDialog();
-        });
-
-        bottomSheetDialog.setContentView(view);
-        bottomSheetDialog.show();
+        createBtn.setOnClickListener(v -> { dialog.dismiss(); showCreateCollectionDialog(song); });
+        dialog.setContentView(view);
+        dialog.show();
     }
+
+    private void showCreateCollectionDialog(MusicItem song) {
+        View dialogView = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_add_collection, null);
+        TextInputEditText editName = dialogView.findViewById(R.id.editTextCollectionName);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("New collection")
+                .setView(dialogView)
+                .setPositiveButton("Create", (d, w) -> {
+                    String name = editName.getText() != null
+                            ? editName.getText().toString().trim() : "";
+                    if (!name.isEmpty()) createCollectionAndAddSong(name, song);
+                    else Toast.makeText(this,
+                            "Collection name cannot be empty", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void createCollectionAndAddSong(String name, MusicItem song) {
+        for (Collection c : collectionManager.getAllCollections()) {
+            if (c.getName().equalsIgnoreCase(name)) {
+                Toast.makeText(this,
+                        "Collection already exists", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+        Collection col = collectionManager.createCollection(name);
+        collectionManager.addSongToCollection(col.getId(), song.getId());
+        Toast.makeText(this,
+                "Created \"" + name + "\" and added song", Toast.LENGTH_SHORT).show();
+        broadcastCollectionChange(ACTION_COLLECTION_CREATED);
+    }
+
 
     private void showCreateCollectionDialog() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_collection, null);

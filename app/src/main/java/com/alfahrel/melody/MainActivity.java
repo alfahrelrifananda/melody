@@ -16,7 +16,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.alfahrel.melody.ui.pages.search.SearchActivity;
 import com.alfahrel.melody.ui.pages.settings.SettingsActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.appbar.AppBarLayout;
@@ -163,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
 
             setupViewPagerAndNavigation();
             setupToolbarActions();
-            setupSearchButton();
             registerMusicUpdateReceiver();
             registerScrollDirectionReceiver();
 
@@ -270,10 +268,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupToolbarActions() {
         try {
-            MaterialButton refreshButton = findViewById(R.id.refresh_button);
-            if (refreshButton != null) {
-                refreshButton.setOnClickListener(v -> refreshMusicFragmentData());
-            }
             setupSettingsButton();
         } catch (Exception e) {
             Log.e(TAG, "Error setting up toolbar actions: " + e.getMessage(), e);
@@ -289,20 +283,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
     }
-
-    private void setupSearchButton() {
-        MaterialButton searchButton = findViewById(R.id.search_button);
-        if (searchButton != null) {
-            searchButton.setOnClickListener(v -> {
-                Intent searchIntent = new Intent(this, SearchActivity.class);
-                startActivity(searchIntent);
-            });
-        }
-    }
-
-    // =========================================================================
-    // Navigation bar hide / show
-    // =========================================================================
 
     private void hideNavBar() {
         if (isActivityDestroyed || navView == null) return;
@@ -380,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
             pagerAdapter = new MainViewPagerAdapter(this);
             viewPager.setAdapter(pagerAdapter);
             viewPager.setOffscreenPageLimit(1);
-            viewPager.setUserInputEnabled(true);
+            viewPager.setUserInputEnabled(false);
 
             viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
                 @Override
@@ -410,28 +390,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private int getPositionForMenuId(int menuId) {
-        if (menuId == R.id.navigation_music)      return 0;
-        if (menuId == R.id.navigation_album)      return 1;
-        if (menuId == R.id.navigation_artist)     return 2;
-        if (menuId == R.id.navigation_collection) return 3;
+        if (menuId == R.id.navigation_home)      return 0;
+        if (menuId == R.id.navigation_search)      return 1;
+        if (menuId == R.id.navigation_collection) return 2;
         return -1;
     }
 
     private void updateNavigationSelection(int position) {
         switch (position) {
-            case 0: navView.setSelectedItemId(R.id.navigation_music);      break;
-            case 1: navView.setSelectedItemId(R.id.navigation_album);      break;
-            case 2: navView.setSelectedItemId(R.id.navigation_artist);     break;
-            case 3: navView.setSelectedItemId(R.id.navigation_collection); break;
+            case 0: navView.setSelectedItemId(R.id.navigation_home);      break;
+            case 1: navView.setSelectedItemId(R.id.navigation_search);      break;
+            case 2: navView.setSelectedItemId(R.id.navigation_collection); break;
         }
     }
 
     private void updateTitleForPosition(int position) {
         switch (position) {
             case 0: currentTitle = getGreeting();    break;
-            case 1: currentTitle = "Albums";         break;
-            case 2: currentTitle = "Artists";        break;
-            case 3: currentTitle = "Collection";     break;
+            case 1: currentTitle = "Search";         break;
+            case 2: currentTitle = "Collection";     break;
             default: currentTitle = "melody";        break;
         }
         if (toolbarTitle != null) toolbarTitle.setText(currentTitle);
@@ -443,67 +420,6 @@ public class MainActivity extends AppCompatActivity {
         if (hour >= 12 && hour < 17) return "Good Afternoon!";
         if (hour >= 17 && hour < 21) return "Good Evening!";
         return "Good Evening!";
-    }
-
-    // =========================================================================
-    // Refresh
-    // =========================================================================
-
-    private void refreshMusicFragmentData() {
-        try {
-            MaterialButton refreshButton = findViewById(R.id.refresh_button);
-            if (refreshButton == null) return;
-
-            animateRefreshButton(refreshButton);
-            clearAllFragmentCaches();
-
-            switch (viewPager.getCurrentItem()) {
-                case 0: showRefreshToast("Refreshing music library...");  break;
-                case 1: showRefreshToast("Refreshing album library...");  break;
-                case 2: showRefreshToast("Refreshing artist library..."); break;
-                default: showRefreshToast("Refreshing library...");       break;
-            }
-
-            pagerAdapter.notifyDataSetChanged();
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error refreshing fragments: " + e.getMessage(), e);
-            showRefreshToast("Error refreshing library");
-            resetRefreshButton();
-        }
-    }
-
-    private void animateRefreshButton(MaterialButton refreshButton) {
-        refreshButton.animate()
-                .rotation(360f)
-                .setDuration(REFRESH_ANIMATION_DURATION)
-                .setInterpolator(new LinearInterpolator())
-                .withEndAction(() -> {
-                    if (!isActivityDestroyed && refreshButton != null) refreshButton.setRotation(0f);
-                })
-                .start();
-
-        refreshButton.setEnabled(false);
-        mainHandler.postDelayed(() -> {
-            if (!isActivityDestroyed && refreshButton != null) refreshButton.setEnabled(true);
-        }, REFRESH_COOLDOWN_DURATION);
-    }
-
-    private void clearAllFragmentCaches() {
-        com.alfahrel.melody.ui.album.AlbumFragment.clearCache();
-        com.alfahrel.melody.ui.artist.ArtistFragment.clearCache();
-    }
-
-    private void showRefreshToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-
-    private void resetRefreshButton() {
-        MaterialButton refreshButton = findViewById(R.id.refresh_button);
-        if (refreshButton != null) {
-            refreshButton.setEnabled(true);
-            refreshButton.setRotation(0f);
-        }
     }
 
     // =========================================================================

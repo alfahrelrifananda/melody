@@ -1,7 +1,12 @@
 package com.alfahrel.melody.ui.collection;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -20,20 +25,54 @@ public class CollectionManager {
 
     private SharedPreferences preferences;
     private Gson gson;
+    private Context context;
 
     public CollectionManager(Context context) {
+        this.context = context.getApplicationContext();
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         gson = new Gson();
     }
 
     /**
-     * Get all collections
+     * Checks if a song with the given MediaStore ID still exists.
+     * @param id The MediaStore ID of the song.
+     * @return true if the song exists, false otherwise.
+     */
+    private boolean songExists(long id) {
+        if (context == null) return false;
+        ContentResolver resolver = context.getContentResolver();
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String[] projection = {MediaStore.Audio.Media._ID};
+        String selection = MediaStore.Audio.Media._ID + " = ?";
+        String[] selectionArgs = {String.valueOf(id)};
+
+        try (Cursor cursor = resolver.query(uri, projection, selection, selectionArgs, null)) {
+            return cursor != null && cursor.getCount() > 0;
+        } catch (Exception e) {
+            Log.e("CollectionManager", "Error checking song existence", e);
+            return false;
+        }
+    }
+
+    /**
+     * Get all collections, with invalid song IDs removed
      */
     public List<Collection> getAllCollections() {
         String json = preferences.getString(KEY_COLLECTIONS, null);
         if (json != null) {
             Type type = new TypeToken<List<Collection>>(){}.getType();
-            return gson.fromJson(json, type);
+            List<Collection> collections = gson.fromJson(json, type);
+            // Remove invalid song IDs
+            for (Collection collection : collections) {
+                List<Long> validIds = new ArrayList<>();
+                for (long id : collection.getMusicIds()) {
+                    if (songExists(id)) {
+                        validIds.add(id);
+                    }
+                }
+                collection.setMusicIds(validIds);
+            }
+            return collections;
         }
         return new ArrayList<>();
     }
@@ -192,5 +231,21 @@ public class CollectionManager {
     public void saveCollections(List<Collection> collections) {
         String json = gson.toJson(collections);
         preferences.edit().putString(KEY_COLLECTIONS, json).apply();
+    }
+
+    /**
+     * Remove a song from all collections (e.g., when deleted from device)
+     */
+    public void removeSongFromAllCollections(long musicId) {
+        List<Collection> collections = getAllCollections();
+        boolean changed = false;
+        for (Collection collection : collections) {
+            if (collection.getMusicIds().remove(musicId)) {
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveCollections(collections);
+        }
     }
 }

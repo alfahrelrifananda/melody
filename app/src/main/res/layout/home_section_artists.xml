@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!--
+  home_section_artists.xml
+  The entire "Artists" section rendered as a single RecyclerView item.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:orientation="vertical"
+
+    android:paddingHorizontal="24dp"
+    android:paddingTop="16dp">
 
     <!-- ── Section header ──────────────────────────────────────────────────── -->
     <LinearLayout
@@ -12,7 +17,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingHorizontal="40dp"
+        android:paddingHorizontal="20dp"
+
         android:paddingBottom="10dp">
 
         <LinearLayout
@@ -24,7 +30,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Your Pinned"
+                android:text="Artists"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:textColor="?attr/colorOnSurface"
                 android:fontFamily="sans-serif-medium" />
@@ -32,43 +38,37 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Long press to unpin"
+                android:text="Your favourite artists"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
-    </LinearLayout>
-
-
-    <!-- Filter chips — wrapped in HorizontalScrollView to enable scrolling -->
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:requiresFadingEdge="horizontal"
-        android:fadingEdgeLength="30dp"
-        android:paddingBottom="8dp">
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/pinnedChipGroup"
+        <TextView
+            android:id="@+id/btnSeeAllArtists"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="30dp"
-            android:paddingEnd="30dp"
-            app:singleLine="true"
-            app:singleSelection="true"
-            app:chipSpacingHorizontal="6dp" />
+            android:text="See all"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorPrimary"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-    </HorizontalScrollView>
+    </LinearLayout>
 
-    <!-- Grid -->
+    <!-- ── Horizontal artist cards ───────────────────────────────────────────── -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/pinnedStripRecyclerView"
+        android:id="@+id/artistsHorizontalRv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="30dp"
-        android:paddingEnd="30dp"
-        android:paddingBottom="14dp"
-        android:clipToPadding="false" />
+        android:paddingHorizontal="14dp"
+        android:clipToPadding="false"
+        android:overScrollMode="never" />
+
+    <!-- Bottom padding spacer so last section doesn't feel cramped -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="24dp" />
 
 </LinearLayout>

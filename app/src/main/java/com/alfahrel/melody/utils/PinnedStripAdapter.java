@@ -54,6 +54,18 @@ public class PinnedStripAdapter extends RecyclerView.Adapter<PinnedStripAdapter.
         notifyDataSetChanged();
     }
 
+    public void removeSongById(long songId) {
+        List<PinnedItem> newAllItems = new ArrayList<>();
+        for (PinnedItem item : allItems) {
+            if (item.getType() == PinnedItem.Type.SONG && item.getId().equals(String.valueOf(songId))) {
+                continue; // Skip the deleted song
+            }
+            newAllItems.add(item);
+        }
+        allItems = newAllItems;
+        applyFilter(activeFilter);
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

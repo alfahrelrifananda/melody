@@ -43,6 +43,18 @@ public class PinnedStripHeaderAdapter extends RecyclerView.Adapter<PinnedStripHe
         return pinnedItems != null && !pinnedItems.isEmpty();
     }
 
+    public void removeSongById(long songId) {
+        List<PinnedItem> newItems = new ArrayList<>();
+        for (PinnedItem item : pinnedItems) {
+            if (item.getType() == PinnedItem.Type.SONG && item.getId().equals(String.valueOf(songId))) {
+                continue; // Skip the deleted song
+            }
+            newItems.add(item);
+        }
+        pinnedItems = newItems;
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemCount() {
         return hasItems() ? 1 : 0;
