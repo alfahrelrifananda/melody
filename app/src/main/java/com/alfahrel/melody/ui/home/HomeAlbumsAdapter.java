@@ -171,7 +171,7 @@ public class HomeAlbumsAdapter extends RecyclerView.Adapter<HomeAlbumsAdapter.Se
             View v = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_album, parent, false);
             float density = parent.getContext().getResources().getDisplayMetrics().density;
-            int widthPx  = (int) (200 * density);
+            int widthPx  = (int) (185 * density);
             int marginPx = (int) (2 * density);
             RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(widthPx, RecyclerView.LayoutParams.WRAP_CONTENT);
             lp.setMargins(marginPx, 0, marginPx, 0);

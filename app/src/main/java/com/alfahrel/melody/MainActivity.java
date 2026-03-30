@@ -246,6 +246,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             MaterialToolbar toolbar = findViewById(R.id.toolbar);
             toolbarTitle = findViewById(R.id.toolbar_title_main);
+            toolbarTitle.setTypeface(toolbarTitle.getTypeface(), android.graphics.Typeface.BOLD);
 
             if (toolbar == null || toolbarTitle == null) {
                 Log.e(TAG, "One or more toolbar components are null");
@@ -419,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
         if (hour >= 5 && hour < 12)  return "Good Morning!";
         if (hour >= 12 && hour < 17) return "Good Afternoon!";
         if (hour >= 17 && hour < 21) return "Good Evening!";
-        return "Good Evening!";
+        return "Still up?";
     }
 
     // =========================================================================

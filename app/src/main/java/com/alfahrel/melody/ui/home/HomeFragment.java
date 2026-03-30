@@ -54,6 +54,7 @@ import com.alfahrel.melody.ui.pages.all.AllSongsActivity;
 import com.alfahrel.melody.ui.pages.nowplaying.AddToCollectionAdapter;
 import com.alfahrel.melody.ui.pages.nowplaying.NowPlayingActivity;
 import com.alfahrel.melody.utils.GsonHelper;
+import com.alfahrel.melody.utils.JumbotronHeaderAdapter;
 import com.alfahrel.melody.utils.PinnedItem;
 import com.alfahrel.melody.utils.PinnedStripHeaderAdapter;
 import com.alfahrel.melody.utils.PlayCountManager;
@@ -72,19 +73,18 @@ import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
 
-    // ── Navigation callback ───────────────────────────────────────────────────
     public interface HomeNavigationListener {
         void navigateToTab(int position);
     }
 
     private HomeNavigationListener navListener;
 
-    // ── Song prefs constants (mirrors MusicFragment) ──────────────────────────
     private static final String SONG_PREFS_NAME = "SongsPrefs";
     private static final String KEY_SONGS       = "songs_full";
+    private static final int    SECTION_LIMIT   = 4;
 
-    // ── Fields ────────────────────────────────────────────────────────────────
     private FragmentHomeBinding      binding;
+    private JumbotronHeaderAdapter   jumbotronAdapter;
     private PinnedStripHeaderAdapter pinnedStripHeaderAdapter;
     private HomeSongsAdapter         songsAdapter;
     private HomeAlbumsAdapter        albumsAdapter;
@@ -94,18 +94,13 @@ public class HomeFragment extends Fragment {
     private final List<AlbumItem>  albums      = new ArrayList<>();
     private final List<ArtistItem> artists     = new ArrayList<>();
 
-    private static final int SECTION_LIMIT = 4;
-    private static final int PERMISSION_REQUEST_CODE = 124;
-
-    private ExecutorService               executorService;
-    private ExecutorService               loaderExecutor;
-    private CollectionManager             collectionManager;
-    private PlayCountManager              playCountManager;
-    private ActivityResultLauncher<String> permissionLauncher;
+    private ExecutorService                             executorService;
+    private ExecutorService                             loaderExecutor;
+    private CollectionManager                           collectionManager;
+    private PlayCountManager                            playCountManager;
+    private ActivityResultLauncher<String>              permissionLauncher;
     private ActivityResultLauncher<IntentSenderRequest> deletePermissionLauncher;
-    private MusicItem pendingDeleteItem = null;
-
-    // ── Receivers ─────────────────────────────────────────────────────────────
+    private MusicItem                                   pendingDeleteItem = null;
 
     private final BroadcastReceiver stripUpdateReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) { refreshPinnedStrip(); }
@@ -118,13 +113,11 @@ public class HomeFragment extends Fragment {
             int height        = intent.getIntExtra("height", 0);
             if (binding == null) return;
             RecyclerView rv = binding.homeRecyclerView;
-            int base = (int)(100 * getResources().getDisplayMetrics().density);
+            int base = (int) (100 * getResources().getDisplayMetrics().density);
             rv.setPadding(rv.getPaddingLeft(), rv.getPaddingTop(),
                     rv.getPaddingRight(), isVisible ? base + height : base);
         }
     };
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -187,9 +180,9 @@ public class HomeFragment extends Fragment {
         binding = null;
     }
 
-    // ── Setup ─────────────────────────────────────────────────────────────────
-
     private void setupRecyclerView() {
+        jumbotronAdapter = new JumbotronHeaderAdapter();
+
         pinnedStripHeaderAdapter = new PinnedStripHeaderAdapter(
                 this::handlePinnedClick,
                 this::handleUnpin
@@ -234,7 +227,11 @@ public class HomeFragment extends Fragment {
 
         binding.homeRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.homeRecyclerView.setAdapter(new ConcatAdapter(
-                pinnedStripHeaderAdapter, songsAdapter, albumsAdapter, artistsAdapter));
+//                jumbotronAdapter,
+                pinnedStripHeaderAdapter,
+                songsAdapter,
+                albumsAdapter,
+                artistsAdapter));
         binding.homeRecyclerView.setItemViewCacheSize(20);
     }
 
@@ -251,37 +248,19 @@ public class HomeFragment extends Fragment {
                 });
     }
 
-    // ── Data loading ──────────────────────────────────────────────────────────
-
-    private static final String TAG = "HomeFragment";
-
     private void loadAllSections() {
-        if (!hasPermission()) {
-            android.util.Log.w(TAG, "loadAllSections: no permission, aborting");
-            return;
-        }
-        android.util.Log.d(TAG, "loadAllSections: starting background load");
+        if (!hasPermission()) return;
         executorService.execute(() -> {
             List<MusicItem>  songs = loadRecentSongs();
             List<AlbumItem>  albs  = loadAlbums();
             List<ArtistItem> arts  = loadArtists();
-            android.util.Log.d(TAG, "loadAllSections: songs=" + songs.size()
-                    + " albums=" + albs.size() + " artists=" + arts.size());
-            if (getActivity() == null) {
-                android.util.Log.w(TAG, "loadAllSections: activity is null, dropping results");
-                return;
-            }
+            if (getActivity() == null) return;
             requireActivity().runOnUiThread(() -> {
-                if (binding == null) {
-                    android.util.Log.w(TAG, "loadAllSections: binding is null on UI thread");
-                    return;
-                }
+                if (binding == null) return;
                 recentSongs.clear(); recentSongs.addAll(songs); songsAdapter.notifyDataSetChanged();
                 albums.clear();      albums.addAll(albs);       albumsAdapter.updateData();
                 artists.clear();     artists.addAll(arts);      artistsAdapter.updateData();
                 binding.homeRecyclerView.getAdapter().notifyDataSetChanged();
-                android.util.Log.d(TAG, "loadAllSections: UI updated — recentSongs="
-                        + recentSongs.size() + " albums=" + albums.size() + " artists=" + artists.size());
             });
         });
     }
@@ -324,91 +303,20 @@ public class HomeFragment extends Fragment {
                     ));
                 } while (c.moveToNext() && list.size() < SECTION_LIMIT);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
     }
 
     private List<AlbumItem> loadAlbums() {
         List<AlbumItem> list = new ArrayList<>();
-        if (getContext() == null) {
-            android.util.Log.w(TAG, "loadAlbums: context is null");
-            return list;
-        }
+        if (getContext() == null) return list;
         ContentResolver cr = requireContext().getContentResolver();
         java.util.LinkedHashMap<Long, AlbumItem> map = new java.util.LinkedHashMap<>();
         try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 new String[]{ MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID },
                 MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.ALBUM + " ASC")) {
-            if (c != null && c.moveToFirst()) {
-                int colId   = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-                int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
-                int colArt  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
-                do {
-                    long   id   = c.getLong(colId);
-                    String name = c.getString(colName);
-                    String art  = c.getString(colArt);
-                    if (name == null || name.trim().isEmpty()) continue;
-                    if (!map.containsKey(id))
-                        map.put(id, new AlbumItem(id, name, art != null ? art : "Unknown",
-                                Uri.parse("content://media/external/audio/albumart/" + id), 1));
-                    else { AlbumItem e = map.get(id); if (e != null) e.setSongCount(e.getSongCount() + 1); }
-                } while (c.moveToNext());
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "loadAlbums: exception", e);
-        }
-        return new ArrayList<>(map.values());
-    }
-
-    private List<ArtistItem> loadArtists() {
-        List<ArtistItem> list = new ArrayList<>();
-        if (getContext() == null) {
-            android.util.Log.w(TAG, "loadArtists: context is null");
-            return list;
-        }
-        ContentResolver cr = requireContext().getContentResolver();
-        java.util.LinkedHashMap<String, ArtistItem> map = new java.util.LinkedHashMap<>();
-        try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                new String[]{ MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DURATION },
-                MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.ARTIST + " ASC")) {
-            if (c != null && c.moveToFirst()) {
-                int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
-                int colAid  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
-                int colDur  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
-                do {
-                    String name = c.getString(colName);
-                    long aid    = c.getLong(colAid);
-                    long dur    = c.getLong(colDur);
-                    if (name == null || name.trim().isEmpty() || name.equals("<unknown>")) continue;
-                    if (!map.containsKey(name))
-                        map.put(name, new ArtistItem(name,
-                                Uri.parse("content://media/external/audio/albumart/" + aid), 1, dur));
-                    else { ArtistItem e = map.get(name); if (e != null) { e.setSongCount(e.getSongCount()+1); e.addDuration(dur); } }
-                } while (c.moveToNext());
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "loadArtists: exception", e);
-        }
-        return new ArrayList<>(map.values()).subList(0, Math.min(map.size(), SECTION_LIMIT));
-    }
-
-    private List<AlbumItem> loadAllAlbums() {
-        List<AlbumItem> list = new ArrayList<>();
-        if (getContext() == null) {
-            android.util.Log.w(TAG, "loadAllAlbums: context is null");
-            return list;
-        }
-        ContentResolver cr = requireContext().getContentResolver();
-        java.util.LinkedHashMap<Long, AlbumItem> map = new java.util.LinkedHashMap<>();
-        try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                new String[]{
-                        MediaStore.Audio.Media.ALBUM,
-                        MediaStore.Audio.Media.ARTIST,
-                        MediaStore.Audio.Media.ALBUM_ID
-                },
-                MediaStore.Audio.Media.IS_MUSIC + " != 0",
-                null,
-                MediaStore.Audio.Media.ALBUM + " ASC")) {
             if (c != null && c.moveToFirst()) {
                 int colId   = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
                 int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
@@ -428,28 +336,19 @@ public class HomeFragment extends Fragment {
                 } while (c.moveToNext());
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "loadAllAlbums: exception", e);
+            e.printStackTrace();
         }
         return new ArrayList<>(map.values());
     }
 
-    private List<ArtistItem> loadAllArtists() {
+    private List<ArtistItem> loadArtists() {
         List<ArtistItem> list = new ArrayList<>();
-        if (getContext() == null) {
-            android.util.Log.w(TAG, "loadAllArtists: context is null");
-            return list;
-        }
+        if (getContext() == null) return list;
         ContentResolver cr = requireContext().getContentResolver();
         java.util.LinkedHashMap<String, ArtistItem> map = new java.util.LinkedHashMap<>();
         try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                new String[]{
-                        MediaStore.Audio.Media.ARTIST,
-                        MediaStore.Audio.Media.ALBUM_ID,
-                        MediaStore.Audio.Media.DURATION
-                },
-                MediaStore.Audio.Media.IS_MUSIC + " != 0",
-                null,
-                MediaStore.Audio.Media.ARTIST + " ASC")) {
+                new String[]{ MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DURATION },
+                MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.ARTIST + " ASC")) {
             if (c != null && c.moveToFirst()) {
                 int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
                 int colAid  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
@@ -464,27 +363,85 @@ public class HomeFragment extends Fragment {
                                 Uri.parse("content://media/external/audio/albumart/" + aid), 1, dur));
                     else {
                         ArtistItem e = map.get(name);
-                        if (e != null) {
-                            e.setSongCount(e.getSongCount() + 1);
-                            e.addDuration(dur);
-                        }
+                        if (e != null) { e.setSongCount(e.getSongCount() + 1); e.addDuration(dur); }
                     }
                 } while (c.moveToNext());
             }
         } catch (Exception e) {
-            android.util.Log.e(TAG, "loadAllArtists: exception", e);
+            e.printStackTrace();
+        }
+        return new ArrayList<>(map.values()).subList(0, Math.min(map.size(), SECTION_LIMIT));
+    }
+
+    private List<AlbumItem> loadAllAlbums() {
+        List<AlbumItem> list = new ArrayList<>();
+        if (getContext() == null) return list;
+        ContentResolver cr = requireContext().getContentResolver();
+        java.util.LinkedHashMap<Long, AlbumItem> map = new java.util.LinkedHashMap<>();
+        try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                new String[]{ MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID },
+                MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.ALBUM + " ASC")) {
+            if (c != null && c.moveToFirst()) {
+                int colId   = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
+                int colArt  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                do {
+                    long   id   = c.getLong(colId);
+                    String name = c.getString(colName);
+                    String art  = c.getString(colArt);
+                    if (name == null || name.trim().isEmpty()) continue;
+                    if (!map.containsKey(id))
+                        map.put(id, new AlbumItem(id, name, art != null ? art : "Unknown",
+                                Uri.parse("content://media/external/audio/albumart/" + id), 1));
+                    else {
+                        AlbumItem e = map.get(id);
+                        if (e != null) e.setSongCount(e.getSongCount() + 1);
+                    }
+                } while (c.moveToNext());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return new ArrayList<>(map.values());
     }
 
-    // ── Pinned strip data ─────────────────────────────────────────────────────
+    private List<ArtistItem> loadAllArtists() {
+        List<ArtistItem> list = new ArrayList<>();
+        if (getContext() == null) return list;
+        ContentResolver cr = requireContext().getContentResolver();
+        java.util.LinkedHashMap<String, ArtistItem> map = new java.util.LinkedHashMap<>();
+        try (Cursor c = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                new String[]{ MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DURATION },
+                MediaStore.Audio.Media.IS_MUSIC + " != 0", null, MediaStore.Audio.Media.ARTIST + " ASC")) {
+            if (c != null && c.moveToFirst()) {
+                int colName = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                int colAid  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
+                int colDur  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                do {
+                    String name = c.getString(colName);
+                    long aid    = c.getLong(colAid);
+                    long dur    = c.getLong(colDur);
+                    if (name == null || name.trim().isEmpty() || name.equals("<unknown>")) continue;
+                    if (!map.containsKey(name))
+                        map.put(name, new ArtistItem(name,
+                                Uri.parse("content://media/external/audio/albumart/" + aid), 1, dur));
+                    else {
+                        ArtistItem e = map.get(name);
+                        if (e != null) { e.setSongCount(e.getSongCount() + 1); e.addDuration(dur); }
+                    }
+                } while (c.moveToNext());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>(map.values());
+    }
 
     private void refreshPinnedStrip() {
         if (getContext() == null || pinnedStripHeaderAdapter == null) return;
         executorService.execute(() -> {
             List<PinnedItem> merged = new ArrayList<>();
 
-            // ── Resolve what actually exists on device right now ──────────────
             java.util.Set<Long>   validSongIds     = new java.util.HashSet<>();
             java.util.Set<Long>   validAlbumIds    = new java.util.HashSet<>();
             java.util.Set<String> validArtistNames = new java.util.HashSet<>();
@@ -492,13 +449,8 @@ public class HomeFragment extends Fragment {
                 ContentResolver cr = requireContext().getContentResolver();
                 try (Cursor c = cr.query(
                         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        new String[]{
-                                MediaStore.Audio.Media._ID,
-                                MediaStore.Audio.Media.ALBUM_ID,
-                                MediaStore.Audio.Media.ARTIST
-                        },
-                        MediaStore.Audio.Media.IS_MUSIC + " != 0",
-                        null, null)) {
+                        new String[]{ MediaStore.Audio.Media._ID, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.ARTIST },
+                        MediaStore.Audio.Media.IS_MUSIC + " != 0", null, null)) {
                     if (c != null && c.moveToFirst()) {
                         int colId     = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
                         int colAlbId  = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID);
@@ -507,30 +459,24 @@ public class HomeFragment extends Fragment {
                             validSongIds.add(c.getLong(colId));
                             validAlbumIds.add(c.getLong(colAlbId));
                             String artist = c.getString(colArtist);
-                            if (artist != null && !artist.equals("<unknown>"))
-                                validArtistNames.add(artist);
+                            if (artist != null && !artist.equals("<unknown>")) validArtistNames.add(artist);
                         } while (c.moveToNext());
                     }
                 }
             } catch (Exception ignored) {}
 
-            // Collections (no MediaStore validation needed — managed internally)
             try {
                 SharedPreferences cp = requireContext().getSharedPreferences("CollectionsPrefs", Context.MODE_PRIVATE);
                 String json = cp.getString("collections", null);
-                // Collections block in refreshPinnedStrip()
                 if (json != null) {
                     List<Collection> cols = GsonHelper.get().fromJson(json, new TypeToken<List<Collection>>(){}.getType());
                     if (cols != null) for (Collection col : cols) if (col.isPinned()) {
-
                         if (col.getMusicIds() != null) {
                             List<Long> validIds = new ArrayList<>();
-                            for (Long id : col.getMusicIds()) {
+                            for (Long id : col.getMusicIds())
                                 if (validSongIds.contains(id)) validIds.add(id);
-                            }
                             col.setMusicIds(validIds);
                         }
-
                         int cnt = col.getMusicIds() != null ? col.getMusicIds().size() : 0;
                         merged.add(new PinnedItem(PinnedItem.Type.COLLECTION, String.valueOf(col.getId()),
                                 col.getName(), cnt + (cnt == 1 ? " song" : " songs"),
@@ -539,7 +485,6 @@ public class HomeFragment extends Fragment {
                 }
             } catch (Exception ignored) {}
 
-            // Albums — silently unpin any album whose ID no longer exists
             try {
                 SharedPreferences ap = requireContext().getSharedPreferences(AlbumFragment.PREFS_NAME, Context.MODE_PRIVATE);
                 String json = ap.getString(AlbumFragment.KEY_ALBUMS, null);
@@ -558,13 +503,11 @@ public class HomeFragment extends Fragment {
                                 }
                             }
                         }
-                        if (changed)
-                            ap.edit().putString(AlbumFragment.KEY_ALBUMS, GsonHelper.get().toJson(albs)).apply();
+                        if (changed) ap.edit().putString(AlbumFragment.KEY_ALBUMS, GsonHelper.get().toJson(albs)).apply();
                     }
                 }
             } catch (Exception ignored) {}
 
-            // Artists — silently unpin any artist whose name no longer exists
             try {
                 SharedPreferences ap = requireContext().getSharedPreferences(ArtistFragment.PREFS_NAME, Context.MODE_PRIVATE);
                 String json = ap.getString(ArtistFragment.KEY_ARTISTS, null);
@@ -583,16 +526,13 @@ public class HomeFragment extends Fragment {
                                 }
                             }
                         }
-                        if (changed)
-                            ap.edit().putString(ArtistFragment.KEY_ARTISTS, GsonHelper.get().toJson(arts)).apply();
+                        if (changed) ap.edit().putString(ArtistFragment.KEY_ARTISTS, GsonHelper.get().toJson(arts)).apply();
                     }
                 }
             } catch (Exception ignored) {}
 
-            // Songs — silently unpin any song whose ID no longer exists
             try {
-                SharedPreferences sp = requireContext()
-                        .getSharedPreferences(SONG_PREFS_NAME, Context.MODE_PRIVATE);
+                SharedPreferences sp = requireContext().getSharedPreferences(SONG_PREFS_NAME, Context.MODE_PRIVATE);
                 String json = sp.getString(KEY_SONGS, null);
                 if (json != null) {
                     Type t = new TypeToken<List<MusicItem>>(){}.getType();
@@ -602,21 +542,15 @@ public class HomeFragment extends Fragment {
                         for (MusicItem s : songs) {
                             if (s.isPinned()) {
                                 if (validSongIds.contains(s.getId())) {
-                                    merged.add(new PinnedItem(
-                                            PinnedItem.Type.SONG,
-                                            String.valueOf(s.getId()),
-                                            s.getTitle(),
-                                            s.getArtist(),
-                                            s.getAlbumArtUri(),
-                                            s));
+                                    merged.add(new PinnedItem(PinnedItem.Type.SONG, String.valueOf(s.getId()),
+                                            s.getTitle(), s.getArtist(), s.getAlbumArtUri(), s));
                                 } else {
                                     s.setPinned(false);
                                     changed = true;
                                 }
                             }
                         }
-                        if (changed)
-                            sp.edit().putString(KEY_SONGS, GsonHelper.get().toJson(songs)).apply();
+                        if (changed) sp.edit().putString(KEY_SONGS, GsonHelper.get().toJson(songs)).apply();
                     }
                 }
             } catch (Exception ignored) {}
@@ -628,8 +562,6 @@ public class HomeFragment extends Fragment {
                 });
         });
     }
-
-    // ── Playback ──────────────────────────────────────────────────────────────
 
     private void playSong(MusicItem song) {
         if (getContext() == null) return;
@@ -661,8 +593,6 @@ public class HomeFragment extends Fragment {
         }, 200);
     }
 
-    // ── Song options ──────────────────────────────────────────────────────────
-
     private void showSongOptions(MusicItem song) {
         SongOptionsBottomSheet sheet = SongOptionsBottomSheet.newInstance(song);
         sheet.setListener(new SongOptionsBottomSheet.SongOptionsListener() {
@@ -681,7 +611,8 @@ public class HomeFragment extends Fragment {
                 .setTitle("Delete song")
                 .setMessage("Are you sure you want to delete \"" + song.getTitle() + "\"?")
                 .setPositiveButton("Delete", (d, w) -> deleteSong(song))
-                .setNegativeButton("Cancel", null).show();
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void deleteSong(MusicItem song) {
@@ -696,7 +627,8 @@ public class HomeFragment extends Fragment {
                 } catch (SecurityException se) {
                     if (se instanceof RecoverableSecurityException) {
                         pendingDeleteItem = song;
-                        IntentSender intentSender = ((RecoverableSecurityException) se).getUserAction().getActionIntent().getIntentSender();
+                        IntentSender intentSender = ((RecoverableSecurityException) se)
+                                .getUserAction().getActionIntent().getIntentSender();
                         deletePermissionLauncher.launch(new IntentSenderRequest.Builder(intentSender).build());
                     } else {
                         Toast.makeText(requireContext(), "Permission denied.", Toast.LENGTH_SHORT).show();
@@ -756,9 +688,9 @@ public class HomeFragment extends Fragment {
         List<Collection> collections = collectionManager.getAllCollections();
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View view = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_add_to_collection, null);
-        RecyclerView rv = view.findViewById(R.id.collectionsRecyclerView);
-        TextView emptyText = view.findViewById(R.id.emptyCollectionsText);
-        View createBtn = view.findViewById(R.id.createNewCollectionButton);
+        RecyclerView rv        = view.findViewById(R.id.collectionsRecyclerView);
+        TextView emptyText     = view.findViewById(R.id.emptyCollectionsText);
+        View createBtn         = view.findViewById(R.id.createNewCollectionButton);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
         if (collections.isEmpty()) {
             rv.setVisibility(View.GONE);
@@ -813,8 +745,6 @@ public class HomeFragment extends Fragment {
         broadcast("com.alfahrel.melody.COLLECTION_CREATED");
     }
 
-    // ── Pinned strip interactions ─────────────────────────────────────────────
-
     private void handlePinnedClick(PinnedItem item) {
         switch (item.getType()) {
             case COLLECTION:
@@ -848,12 +778,8 @@ public class HomeFragment extends Fragment {
                     Type type = new TypeToken<List<MusicItem>>(){}.getType();
                     List<MusicItem> songs = GsonHelper.get().fromJson(json, type);
                     if (songs != null) {
-                        for (MusicItem s : songs) {
-                            if (s.getId() == song.getId()) {
-                                s.setPinned(false);
-                                break;
-                            }
-                        }
+                        for (MusicItem s : songs)
+                            if (s.getId() == song.getId()) { s.setPinned(false); break; }
                         sp.edit().putString(KEY_SONGS, GsonHelper.get().toJson(songs)).apply();
                     }
                 }
@@ -904,8 +830,6 @@ public class HomeFragment extends Fragment {
         Toast.makeText(requireContext(), "\"" + item.getName() + "\" unpinned from Home", Toast.LENGTH_SHORT).show();
         refreshPinnedStrip();
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private boolean hasPermission() {
         String p = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU

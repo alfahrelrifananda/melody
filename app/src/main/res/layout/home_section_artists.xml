@@ -31,6 +31,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Artists"
+                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:textColor="?attr/colorOnSurface"
                 android:fontFamily="sans-serif-medium" />
@@ -65,10 +66,5 @@
         android:paddingHorizontal="14dp"
         android:clipToPadding="false"
         android:overScrollMode="never" />
-
-    <!-- Bottom padding spacer so last section doesn't feel cramped -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="24dp" />
 
 </LinearLayout>

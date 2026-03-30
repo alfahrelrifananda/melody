@@ -2,6 +2,7 @@
     <style name="Theme.melody" parent="Theme.Material3Expressive.Dark.NoActionBar">
         <item name="android:fontFamily">@font/poppins</item>
         <item name="fontFamily">@font/poppins</item>
+        <item name="android:textStyle">bold</item>
 
         <item name="android:navigationBarColor">
             @android:color/transparent
@@ -206,5 +207,10 @@
 <item name="android:textColor">?attr/colorOnSurface</item>
 </style>
 
+    <style name="MyTabTextAppearance" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 
     </resources>

@@ -303,7 +303,7 @@
                 app:iconSize="20dp"
                 app:cornerRadius="8dp"
                 android:backgroundTint="?attr/colorPrimaryContainer"
-                app:iconTint="?attr/colorOnSurface"
+                app:iconTint="?attr/colorSurface"
                 android:contentDescription="Next" />
 
             <com.google.android.material.button.MaterialButton
