@@ -38,7 +38,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Tabs -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
@@ -51,10 +50,27 @@
         app:tabGravity="fill"
         app:tabMode="fixed"
         app:tabIndicatorFullWidth="false"
+        app:tabUnboundedRipple="false"
         app:tabRippleColor="@android:color/transparent"
-        app:tabSelectedTextColor="?attr/colorPrimary"
-        app:tabTextColor="?attr/colorOnSurfaceVariant"
-        app:tabIndicatorColor="?attr/colorPrimary" />
+        app:tabIndicatorColor="?attr/colorPrimary"
+        app:tabIconTint="?attr/colorOnSurfaceVariant">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tab_songs" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tab_albums" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tab_artists" />
+
+    </com.google.android.material.tabs.TabLayout>
 
     <!-- ViewPager -->
     <androidx.viewpager2.widget.ViewPager2

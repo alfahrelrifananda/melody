@@ -31,9 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp">
+                android:gravity="center_vertical">
 
                 <TextView
                     android:id="@+id/toolbar_title_main"
@@ -41,7 +39,6 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:textStyle="bold"
-                    android:layout_marginStart="16dp"
                     android:textSize="24dp"
                     android:text="melody"
                     android:textFontWeight="550"
@@ -50,13 +47,15 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/settings_button"
                     style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
-                    android:layout_width="45dp"
+                    android:layout_width="38dp"
+                    android:layout_marginRight="12dp"
                     android:layout_height="38dp"
                     app:icon="@drawable/ic_outline_settings_24"
                     app:iconSize="24dp"
                     app:iconGravity="textStart"
                     app:iconTint="?attr/colorOnSurfaceVariant"
                     android:insetTop="0dp"
+                    android:visibility="gone"
                     android:insetBottom="0dp"
                     android:backgroundTint="?attr/colorSurfaceContainerHigh"
                     app:cornerRadius="24dp" />

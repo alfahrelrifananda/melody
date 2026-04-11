@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingHorizontal="40dp"
+        android:paddingHorizontal="18dp"
         android:paddingBottom="10dp">
 
         <LinearLayout
@@ -29,7 +29,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Albums"
-                android:textStyle="bold"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:textColor="?attr/colorOnSurface"
                 android:fontFamily="sans-serif-medium" />
@@ -61,7 +60,7 @@
         android:id="@+id/albumsHorizontalRv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="40dp"
+        android:paddingHorizontal="18dp"
         android:clipToPadding="false"
         android:overScrollMode="never" />
 

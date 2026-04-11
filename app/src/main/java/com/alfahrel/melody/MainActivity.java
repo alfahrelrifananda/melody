@@ -246,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             MaterialToolbar toolbar = findViewById(R.id.toolbar);
             toolbarTitle = findViewById(R.id.toolbar_title_main);
-            toolbarTitle.setTypeface(toolbarTitle.getTypeface(), android.graphics.Typeface.BOLD);
 
             if (toolbar == null || toolbarTitle == null) {
                 Log.e(TAG, "One or more toolbar components are null");

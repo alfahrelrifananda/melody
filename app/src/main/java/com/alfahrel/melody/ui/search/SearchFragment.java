@@ -126,20 +126,21 @@ public class SearchFragment extends Fragment {
             @Override public int getItemCount() { return 3; }
         });
 
-        new TabLayoutMediator(binding.tabLayout, binding.viewPager,
-                (tab, position) -> {
-                    switch (position) {
-                        case 0: tab.setText("Songs");   break;
-                        case 1: tab.setText("Albums");  break;
-                        case 2: tab.setText("Artists"); break;
-                    }
-                }).attach();
+        binding.tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override public void onTabSelected(TabLayout.Tab tab) {
+                binding.viewPager.setCurrentItem(tab.getPosition(), true);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab) {}
+            @Override public void onTabReselected(TabLayout.Tab tab) {}
+        });
 
         binding.viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override public void onPageSelected(int position) { applySearch(); }
+            @Override public void onPageSelected(int position) {
+                binding.tabLayout.selectTab(binding.tabLayout.getTabAt(position));
+                applySearch();
+            }
         });
     }
-
     private void setupSearch() {
         binding.searchEditText.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
