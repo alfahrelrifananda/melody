@@ -1,21 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  home_section_songs.xml
-  The entire "Recent Songs" section rendered as a single RecyclerView item.
-  Contains: section header row  +  vertical list of song rows (inflated programmatically).
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="8dp">
+    android:paddingTop="16dp">
 
-    <!-- ── Section header ──────────────────────────────────────────────────── -->
+    <!-- Section header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingHorizontal="18dp"
         android:paddingBottom="10dp">
 
@@ -28,10 +23,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="Recent Songs"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
-                android:textColor="?attr/colorOnSurface"
-                android:fontFamily="sans-serif-medium" />
+                android:textColor="?attr/colorOnSurface" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -39,29 +34,28 @@
                 android:text="Recently added to your library"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant" />
+
         </LinearLayout>
 
-        <!-- "See All" button -->
         <TextView
             android:id="@+id/btnSeeAllSongs"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="See all"
-            android:textAppearance="?attr/textAppearanceLabelMedium"
-            android:textColor="?attr/colorPrimary"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:paddingStart="12dp"
             android:paddingTop="6dp"
             android:paddingBottom="6dp"
-            android:background="?attr/selectableItemBackgroundBorderless" />
+            android:text="See all"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textColor="?attr/colorPrimary" />
 
     </LinearLayout>
 
-    <!-- ── Songs container (rows added programmatically) ───────────────────── -->
+    <!-- Songs container (rows added programmatically) -->
     <LinearLayout
         android:id="@+id/songsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="0dp" />
+        android:orientation="vertical" />
 
 </LinearLayout>

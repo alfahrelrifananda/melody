@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Melody - Music Player App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: black;
+      color: white;
+      font-family: 'Courier New', monospace;
+      line-height: 1.4;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 2px solid white;
+    }
+
+    h1, h2 {
+      color: gray;
+      border-bottom: 1px dashed white;
+      padding-bottom: 5px;
+    }
+
+    a {
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .content {
+      background-color: black;
+      padding: 20px;
+      border: 1px dashed white;
+      margin-bottom: 20px;
+    }
+
+    .content section {
+      margin-bottom: 20px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.8em;
+      margin-top: 20px;
+    }
+
+    .marquee {
+      background-color: black;
+      color: white;
+      padding: 5px 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border-top: 1px dashed white;
+      border-bottom: 1px dashed white;
+      margin: 20px 0;
+    }
+
+    .marquee p {
+      display: inline-block;
+      padding-left: 100%;
+      animation: marquee 20s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(-100%, 0); }
+    }
+
+    /* Extra styles for the project page */
+    .badges {
+      display: flex;
+      gap: 10px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border: 1px dashed white;
+      font-size: 0.8em;
+      text-decoration: none;
+      color: white;
+      font-family: 'Courier New', monospace;
+    }
+    .badge:hover {
+      background-color: #333;
+    }
+    .screenshots {
+      display: flex;
+      justify-content: space-around;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .screenshot {
+      border: 1px dashed white;
+      max-width: 200px;
+    }
+    .code-block {
+      background-color: #111;
+      padding: 10px;
+      border: 1px dashed white;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      overflow-x: auto;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: white;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Melody</h1>
+    <p>~ music player app ~</p>
+  </div>
+
+  <div class="marquee">
+    <p>A music player app for your local music collection • Material 3 design • Open Source</p>
+  </div>
+
+  <div class="content">
+    <section>
+      <h2>// Overview</h2>
+      <p>Melody is a music player app for your local music collection, featuring Material 3 design and dynamic color theming.</p>
+      <div class="badges">
+        <a href="https://github.com/alfahrelrifananda/melody/releases" class="badge">
+          <img src="https://img.shields.io/github/v/release/alfahrelrifananda/melody?style=for-the-badge" alt="Latest release">
+        </a>
+        <a href="https://developer.android.com" class="badge">
+          <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android">
+        </a>
+        <a href="https://github.com/alfahrelrifananda/melody/blob/main/LICENSE" class="badge">
+          <img src="https://img.shields.io/github/license/alfahrelrifananda/melody?style=for-the-badge" alt="License">
+        </a>
+      </div>
+      <p><a href="https://github.com/alfahrelrifananda/melody/releases" class="badge">Get it on GitHub</a></p>
+    </section>
+
+    <section>
+      <h2>// Features</h2>
+      <p>• Play music from your device's storage<br>
+         • Material 3 interface with dynamic color theming<br>
+         • Standard player controls (play, pause, skip, shuffle, repeat)<br>
+         • Background playback with notification controls<br>
+         • Optimized for performance</p>
+    </section>
+
+    <section>
+      <h2>// Screenshots</h2>
+      <div class="screenshots">
+        <img src="https://raw.githubusercontent.com/alfahrelrifananda/melody/main/screenshot/screenshot1.png" class="screenshot">
+        <img src="https://raw.githubusercontent.com/alfahrelrifananda/melody/main/screenshot/screenshot2.png" class="screenshot">
+        <img src="https://raw.githubusercontent.com/alfahrelrifananda/melody/main/screenshot/screenshot3.png" class="screenshot">
+      </div>
+    </section>
+
+    <section>
+      <h2>// Tech Stack</h2>
+      <p>• <strong>Language:</strong> Java<br>
+         • <strong>UI:</strong> XML Layouts<br>
+         • <strong>Design:</strong> Material 3 with Dynamic Colors<br>
+         • <strong>Media:</strong> MediaPlayer & MediaSession<br>
+         • <strong>Architecture:</strong> Native Android</p>
+    </section>
+
+    <section>
+      <h2>// Getting Started</h2>
+      <h3>Prerequisites</h3>
+      <p>• Android Studio (latest stable version)<br>
+         • Android device or emulator (API 24+)</p>
+
+      <h3>Installation</h3>
+      <div class="code-block">
+        git clone https://github.com/alfahrelrifananda/melody.git<br>
+        cd melody<br>
+        # Open the project in Android Studio<br>
+        # Build and run the app<br>
+        # Grant storage permissions to access your music files
+      </div>
+    </section>
+
+    <section>
+      <h2>// Contributing</h2>
+      <p>If you'd like to contribute:</p>
+      <p>• Fork the project<br>
+         • Open issues for bugs or feature requests<br>
+         • Submit pull requests</p>
+    </section>
+
+    <section>
+      <h2>// Translations</h2>
+      <p>Melody is currently available in English. If you want to add more languages, open an issue or submit a pull request with translation files.</p>
+    </section>
+
+    <section>
+      <h2>// License</h2>
+      <p>This project is licensed under the <strong>GNU General Public License v3.0</strong>. See the <a href="https://github.com/alfahrelrifananda/melody/blob/main/LICENSE">LICENSE</a> file for details.</p>
+    </section>
+
+    <a href="index.html" class="back-link">← Back to home</a>
+  </div>
+
+  <div class="footer">
+    <p>© 2026 Alfahrel • Last updated: April 19, 2026</p>
+  </div>
+</body>
+</html>
