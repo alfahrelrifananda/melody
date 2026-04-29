@@ -97,7 +97,6 @@ public class HomeSongsAdapter extends RecyclerView.Adapter<HomeSongsAdapter.Sect
                         .inflate(R.layout.item_music, songsContainer, false);
 
                 ImageView art        = row.findViewById(R.id.album_art_image);
-                TextView  songNumber = row.findViewById(R.id.song_number);
                 TextView  title      = row.findViewById(R.id.song_title);
                 TextView  subtitle   = row.findViewById(R.id.artist_name);
                 MaterialButton btnMore = row.findViewById(R.id.info_button);
@@ -106,9 +105,6 @@ public class HomeSongsAdapter extends RecyclerView.Adapter<HomeSongsAdapter.Sect
                     Log.e("HomeSongsAdapter", "ImageView 'art' is null!");
                     continue;
                 }
-
-                // Set song number
-                songNumber.setText(String.valueOf(i + 1));
 
                 Uri albumArtUri = song.getAlbumArtUri();
                 Log.d("HomeSongsAdapter", "Loading song: " + song.getTitle() +

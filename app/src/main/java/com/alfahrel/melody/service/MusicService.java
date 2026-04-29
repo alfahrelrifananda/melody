@@ -54,6 +54,7 @@ public class MusicService extends Service implements
     public static final String ACTION_PREVIOUS = "ACTION_PREVIOUS";
     public static final String ACTION_STOP = "ACTION_STOP";
     public static final String ACTION_SEEK = "ACTION_SEEK";
+    public static final String ACTION_REPEAT = "ACTION_REPEAT";
     public static final String ACTION_REQUEST_STATE = "ACTION_REQUEST_STATE";
     public static final String ACTION_TOGGLE_SHUFFLE = "ACTION_TOGGLE_SHUFFLE";
     public static final String ACTION_TOGGLE_REPEAT = "ACTION_TOGGLE_REPEAT";
@@ -236,6 +237,10 @@ public class MusicService extends Service implements
                     case ACTION_STOP:
                         stopMusic();
                         break;
+                    case ACTION_REPEAT:
+                        int repeatMode = intent.getIntExtra("repeat_mode", REPEAT_OFF);
+                        setRepeatMode(repeatMode);
+                        break;
                     case ACTION_SEEK:
                         int seekPosition = intent.getIntExtra("seek_position", 0);
                         seekTo(seekPosition);
@@ -380,6 +385,8 @@ public class MusicService extends Service implements
                 updatePlaybackState();
                 showNotification();
                 broadcastPlaybackState();
+                // FIX: broadcast full music update so widget receives is_playing = true
+                broadcastMusicUpdate();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in resumeMusic: " + e.getMessage(), e);
@@ -398,6 +405,8 @@ public class MusicService extends Service implements
                 updatePlaybackState();
                 showNotification();
                 broadcastPlaybackState();
+                // FIX: broadcast full music update so widget receives is_playing = false
+                broadcastMusicUpdate();
             }
         } catch (Exception e) {
             Log.e(TAG, "Error in pauseMusic: " + e.getMessage(), e);
@@ -472,7 +481,6 @@ public class MusicService extends Service implements
             Log.e(TAG, "Error in playPrevious: " + e.getMessage(), e);
         }
     }
-
 
     private void seekTo(int position) {
         if (mediaPlayer != null && isPrepared) {
@@ -663,7 +671,6 @@ public class MusicService extends Service implements
                 .build();
 
         mediaSession.setPlaybackState(playbackState);
-
         updateMediaSessionModes();
     }
 
@@ -869,6 +876,11 @@ public class MusicService extends Service implements
             intent.setPackage(getPackageName());
             intent.putExtra("music_item", currentSong);
             intent.putExtra("is_playing", isPlaying);
+            // Include position/duration so widget progress bar stays accurate
+            if (mediaPlayer != null && isPrepared) {
+                intent.putExtra("current_position", mediaPlayer.getCurrentPosition());
+                intent.putExtra("duration", mediaPlayer.getDuration());
+            }
             sendBroadcast(intent);
         } catch (Exception e) {
             Log.e(TAG, "Error broadcasting music update: " + e.getMessage(), e);

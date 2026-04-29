@@ -59,7 +59,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
     public void onBindViewHolder(@NonNull MusicViewHolder holder, int position) {
         MusicItem musicItem = musicList.get(position);
 
-        holder.songNumberTextView.setText(String.valueOf(position + 1));
         holder.titleTextView.setText(musicItem.getTitle());
         holder.artistTextView.setText(musicItem.getArtist());
 
@@ -95,7 +94,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
         ImageView albumArtImageView;
         TextView titleTextView;
         TextView artistTextView;
-        TextView songNumberTextView;
         MaterialButton infoButton;
 
         public MusicViewHolder(@NonNull View itemView) {
@@ -104,7 +102,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             albumArtImageView = itemView.findViewById(R.id.album_art_image);
             titleTextView = itemView.findViewById(R.id.song_title);
             artistTextView = itemView.findViewById(R.id.artist_name);
-            songNumberTextView = itemView.findViewById(R.id.song_number);
             infoButton = itemView.findViewById(R.id.info_button);
         }
     }

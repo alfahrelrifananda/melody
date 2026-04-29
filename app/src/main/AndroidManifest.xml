@@ -58,9 +58,7 @@
         <activity android:name=".ui.album.AlbumDetailActivity" />
         <activity android:name=".ui.artist.ArtistDetailActivity" />
         <activity android:name=".ui.collection.CollectionDetailActivity" />
-        <activity android:name=".ui.pages.search.SearchActivity"
-            android:windowSoftInputMode="adjustResize|stateVisible"
-            />
+
         <activity
             android:name=".ui.pages.settings.SettingsActivity"
             android:exported="false" />
@@ -73,6 +71,37 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <receiver
+            android:name=".widget.MelodyWidget"
+            android:exported="true">
+            <intent-filter>
+                <!-- Standard system broadcast when a widget needs updating -->
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+
+                <!-- Our own button-action broadcasts -->
+                <action android:name="com.alfahrel.melody.WIDGET_SHUFFLE" />
+                <action android:name="com.alfahrel.melody.WIDGET_PLAY" />
+                <action android:name="com.alfahrel.melody.WIDGET_NEXT" />
+                <action android:name="ACTION_PLAYBACK_STATE_CHANGED"/>
+
+                <!-- Fired by MusicService when the playing track changes -->
+                <action android:name="com.alfahrel.melody.ACTION_MUSIC_UPDATED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/melody_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

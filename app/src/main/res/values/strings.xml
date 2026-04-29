@@ -8,4 +8,15 @@
     <string name="tab_songs">Songs</string>
     <string name="tab_albums">Albums</string>
     <string name="tab_artists">Artists</string>
+    <string name="widget_badge_collection">Collection</string>
+    <string name="widget_badge_album">Album</string>
+    <string name="widget_description">Play your music collections and albums from the home screen</string>
+    <string name="widget_cd_album_art">Album art</string>
+    <string name="widget_cd_shuffle">Shuffle</string>
+    <string name="widget_cd_previous">Previous</string>
+    <string name="widget_cd_play">Play / Pause</string>
+    <string name="widget_cd_next">Next</string>
+    <string name="widget_cd_repeat">Repeat</string>
+    <string name="widget_tap_to_play">Tap ▶ to play</string>
+
 </resources>
